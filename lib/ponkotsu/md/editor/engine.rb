@@ -11,7 +11,9 @@ module PonkotsuMdEditor
     # Initialize helper methods to be available in ActionView
     # This makes PonkotsuMdEditor::Helpers methods accessible in Rails views
     initializer "ponkotsu_md_editor.helpers" do
-      ActionView::Base.include PonkotsuMdEditor::Helpers
+      ActiveSupport.on_load(:action_view) do
+        include PonkotsuMdEditor::Helpers
+      end
     end
   end
 end
