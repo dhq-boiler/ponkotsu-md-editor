@@ -1,0 +1,22 @@
+<%
+  form = locals[:form]
+  content = locals[:content]
+  placeholder = locals[:placeholder]
+%>
+
+<div class="editor-container">
+  <div id="editor_content"
+       contenteditable="true"
+       data-field="content"
+       class="form-control markdown-textarea">
+    <%= raw content %>
+  </div>
+
+  <div id="editor_content_placeholder">
+    <%= placeholder %>
+  </div>
+
+  <%= form.hidden_field :content, id: "content_hidden_field" %>
+
+  <%= render "preview_area" %>
+</div>

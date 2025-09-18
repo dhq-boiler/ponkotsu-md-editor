@@ -1,0 +1,102 @@
+<%
+  _options = {
+    form: options[:form],
+    content: options[:content] || "",
+    lang: options[:lang] || :en,
+    preview: options[:preview] || true,
+    tools: options[:tools] || %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule],
+    placeholder: locals[:placeholder] || case lang
+    when :en
+      <<-EOS
+      EOS
+    when :ja
+      <<-EOS
+      Markdownで記事を書いてください...
+
+      例：
+      # 見出し1
+      ## 見出し2
+      ### 見出し3
+
+      **太字** *斜体* ~~打ち消し線~~
+
+      - 箇条書きリスト
+      - リストアイテム2
+
+      1. 番号付きリスト
+      2. 番号付きアイテム2
+
+      - [ ] 未完了タスク
+      - [x] 完了済みタスク
+
+      > 引用ブロック
+      > 複数行の引用文
+
+      [リンク](https://example.com)
+      ![画像](画像URL)
+
+      `インラインコード`
+
+      ```
+      コードブロック
+      function example() {
+      return 'Hello';
+      }
+      ```
+
+      | 列1 | 列2 | 列3 |
+      |-----|-----|-----|
+      | セル1 | セル2 | セル3 |
+
+      ---
+
+      詳しい記法はツールバーのボタンをご活用ください。
+      EOS
+      else
+        "Not supported language"
+      end
+  }
+%>
+
+<div class="markdown-editor">
+  <%= render "toolbar", options: _options %>
+  <%= render "input_area", options: _options %>
+</div>
+<div class="form-text medium-contrast-text">
+  <strong><%= case lang
+              when :en
+                "You can write in Markdown."
+              when :ja
+                "Markdownで記載できます。"
+              else
+                "N/A"
+              end %></strong>
+  <a href="#" data-bs-toggle="modal" data-bs-target="#markdownHelpModal" class="text-decoration-none" style="color: var(--accent-color);">
+    <%= case lang
+        when :en
+          "Writing Guide"
+        when :ja
+          "書き方ガイド"
+        else
+          "N/A"
+        end %>
+  </a> |
+  <strong><%= case lang
+              when :en
+                "Keyboard Shortcuts"
+              when :ja
+                "キーボードショートカット"
+              else
+                "N/A"
+              end %>：</strong>
+  <%= case lang
+      when :en
+        "Ctrl+B (Bold), Ctrl+I (Italic), Ctrl+K (Link), Tab (Indent)"
+      when :ja
+        "Ctrl+B (太字), Ctrl+I (斜体), Ctrl+K (リンク), Tab (インデント)"
+      else
+        "N/A"
+      end %>
+</div>
+
+<%= javascript_include_tag 'markdown_editor' %>
