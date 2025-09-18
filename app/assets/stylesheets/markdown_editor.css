@@ -1,0 +1,42 @@
+
+@theme {
+    --accent-color: #007bff; /* 例: ブルー */
+    --accent-color-hover: #0056b3; /* 例: ダークブルー */
+    --preview-bg: #363636; /* 例: ダークグレー */
+    --text-primary: #ffffff; /* 例: ホワイト */
+}
+
+.editor-container {
+    position: relative;
+}
+
+#editor_content {
+    position: relative;
+    /* エディターのスタイルは既存のまま */
+    overflow: hidden; /* はみ出し防止 */
+    height: calc(24 * 20px);
+}
+
+#editor_content_placeholder {
+    position: absolute;
+    top: -17px;     /* editor_contentのpaddingに合わせて調整 */
+    left: 13px;    /* editor_contentのpaddingに合わせて調整 */
+    color: #999;
+    pointer-events: none;
+    z-index: 1;
+    white-space: pre-line;  /* 改行を表示 */
+    /* デフォルトで表示 */
+    display: block;
+    max-height: calc(24 * 20px);
+    overflow: hidden;
+}
+
+/* emptyクラスがない時（コンテンツがある時）にプレースホルダーを隠す */
+#editor_content:not(.empty) ~ #editor_content_placeholder {
+    display: none;
+}
+
+/*!* フォーカス時も隠す *!*/
+/*#editor_content:focus ~ #editor_content_placeholder {*/
+/*    display: none;*/
+/*}*/
