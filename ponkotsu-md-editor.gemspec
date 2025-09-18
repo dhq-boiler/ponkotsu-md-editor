@@ -9,7 +9,10 @@ Gem::Specification.new do |spec|
   spec.email = ["dhq_boiler@live.jp"]
 
   spec.summary = "A gem that provides a fun Markdown editor."
-  spec.description = "There is a bug in Chrome where entering large amounts of text into a textarea element causes significant slowness (https://issues.chromium.org/issues/341564372). This gem serves as a countermeasure for that issue."
+  spec.description = "There is a bug in Chrome where entering large amounts of text " \
+                     "into a textarea element causes significant slowness " \
+                     "(https://issues.chromium.org/issues/341564372). " \
+                     "This gem serves as a countermeasure for that issue."
   spec.homepage = "https://github.com/dhq-boiler/ponkotsu-md-editor"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.4.5"
@@ -17,6 +20,7 @@ Gem::Specification.new do |spec|
   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["rubygems_mfa_required"] = "true"
   # spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
 
   # Specify which files should be added to the gem when it is released.
