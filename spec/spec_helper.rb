@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "ponkotsu/md/editor"
+require "ponkotsu/md/helpers"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
