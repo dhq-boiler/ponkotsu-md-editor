@@ -1,0 +1,24 @@
+name: Release Gem
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release to RubyGems
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Publish to RubyGems
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          cd ruby
+          mkdir -p .gem
+          printf -- "---\n:rubygems_api_key: ${RUBYGEMS_API_KEY}\n" > .gem/credentials
+          chmod 0600 .gem/credentials
+          gem build ponkotsu-md-editor.gemspec
+          gem push ponkotsu-md-editor-*.gem --config-file .gem/credentials
