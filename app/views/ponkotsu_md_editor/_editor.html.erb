@@ -2,12 +2,12 @@
   _form = locals[:form][:form]
   puts "1_form:" + _form.inspect
   puts "1locals:" + locals.inspect
-  _content = locals[:content][:content]
+  _content = locals[:content]
   _options = {
-    lang: locals[:options][:option][:lang] || :en,
-    preview: locals[:options][:option][:preview] || true,
-    tools: locals[:options][:option][:tools] || %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule],
-    placeholder: locals[:options][:option][:placeholder] || case (locals[:options][:option][:lang] || :en)
+    lang: locals[:options][:lang] || :en,
+    preview: locals[:options][:preview] || true,
+    tools: locals[:options][:tools] || %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule],
+    placeholder: locals[:options][:placeholder] || case (locals[:options][:lang] || :en)
     when :en
       <<-EOS
       EOS
