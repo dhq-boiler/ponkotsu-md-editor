@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    // DOM要素の安全な取得
+    // Safe DOM element retrieval
     function getElement(selector) {
         try {
             return document.querySelector(selector);
@@ -11,7 +11,7 @@
         }
     }
 
-    // DOM読み込み完了を待つ
+    // Wait for DOM content loaded
     function onReady(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback);
@@ -23,14 +23,14 @@
     onReady(function() {
         console.log('Enhanced Markdown editor initializing...');
 
-        // DOM要素の取得
+        // Get DOM elements
         const textarea = document.getElementById('editor_content');
         const previewContainer = getElement('#markdownPreview');
         const previewToggle = getElement('#previewToggle');
 
         let isPreviewMode = false;
 
-        // contenteditable要素用の選択範囲取得・設定機能
+        // Selection range utilities for contenteditable elements
         function getContentEditableSelection(element) {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) {
@@ -40,7 +40,7 @@
             const range = selection.getRangeAt(0);
             const fullText = element.innerText;
 
-            // テキストノードを走査して正確な位置を計算
+            // Walk through text nodes to calculate accurate positions
             const walker = document.createTreeWalker(
                 element,
                 NodeFilter.SHOW_TEXT,
@@ -54,7 +54,7 @@
                 textNodes.push(node);
             }
 
-            // 開始位置の計算
+            // Calculate start position
             let startPos = 0;
             let foundStart = false;
             for (let i = 0; i < textNodes.length; i++) {
@@ -68,7 +68,7 @@
                 }
             }
 
-            // 終了位置の計算
+            // Calculate end position
             let endPos = 0;
             let foundEnd = false;
             for (let i = 0; i < textNodes.length; i++) {
@@ -82,7 +82,7 @@
                 }
             }
 
-            // フォールバック処理
+            // Fallback handling
             if (!foundStart || !foundEnd) {
                 const preRange = document.createRange();
                 preRange.selectNodeContents(element);
@@ -93,7 +93,7 @@
                 endPos = startPos + range.toString().length;
             }
 
-            // innerTextから正確な選択テキストを取得
+            // Get accurate selected text from innerText
             const selectedText = fullText.substring(startPos, endPos);
 
             return {
@@ -103,17 +103,17 @@
             };
         }
 
-        // 指定位置に選択範囲を設定
+        // Set selection range at specified position
         function setContentEditableSelection(element, start, end) {
             element.focus();
 
             const fullText = element.innerText;
 
-            // 範囲チェック
+            // Range validation
             start = Math.max(0, Math.min(start, fullText.length));
             end = Math.max(0, Math.min(end, fullText.length));
 
-            // テキストノードを取得
+            // Get text nodes
             const walker = document.createTreeWalker(
                 element,
                 NodeFilter.SHOW_TEXT,
@@ -127,7 +127,7 @@
                 textNodes.push(node);
             }
 
-            // 累積位置からノードとオフセットを計算
+            // Calculate node and offset from cumulative position
             let currentOffset = 0;
             let startNode = null, startOffset = 0;
             let endNode = null, endOffset = 0;
@@ -136,13 +136,13 @@
                 const textNode = textNodes[i];
                 const nodeLength = textNode.textContent.length;
 
-                // 開始位置の特定
+                // Find start position
                 if (!startNode && currentOffset + nodeLength >= start) {
                     startNode = textNode;
                     startOffset = start - currentOffset;
                 }
 
-                // 終了位置の特定
+                // Find end position
                 if (!endNode && currentOffset + nodeLength >= end) {
                     endNode = textNode;
                     endOffset = end - currentOffset;
@@ -154,7 +154,7 @@
 
             if (startNode && endNode) {
                 try {
-                    // 境界値の調整
+                    // Adjust boundary values
                     startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
                     endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
 
@@ -168,7 +168,7 @@
 
                 } catch (e) {
                     console.error('Selection setting failed:', e);
-                    // フォールバック: 要素の末尾にカーソルを設定
+                    // Fallback: set cursor at end of element
                     const range = document.createRange();
                     range.selectNodeContents(element);
                     range.collapse(false);
@@ -181,19 +181,19 @@
             }
         }
 
-        // contenteditable要素用のテキスト取得機能（改行保持版）
+        // Text utilities for contenteditable elements (preserve line breaks)
         function getContentEditableText(element) {
-            // innerTextを使用して改行を保持
+            // Use innerText to preserve line breaks
             return element.innerText || element.textContent || '';
         }
 
-        // contenteditable要素用のテキスト設定機能（改行保持版）
+        // Set text for contenteditable elements (preserve line breaks)
         function setContentEditableText(element, text) {
-            // innerTextを使用して改行を正確に設定
+            // Use innerText for accurate line break handling
             element.innerText = text;
         }
 
-        // Markdownテキスト挿入機能
+        // Markdown text insertion functionality
         window.insertMarkdown = function(before, after) {
             after = after || '';
 
@@ -203,20 +203,20 @@
             }
 
             try {
-                // contenteditable要素かどうかを判定
+                // Check if element is contenteditable
                 const isContentEditable = textarea.contentEditable === 'true' ||
                                         textarea.getAttribute('contenteditable') === 'true';
 
                 let start, end, selectedText;
 
                 if (isContentEditable) {
-                    // contenteditable要素の場合
+                    // For contenteditable elements
                     const selection = getContentEditableSelection(textarea);
                     start = selection.start;
                     end = selection.end;
                     selectedText = selection.selectedText;
                 } else {
-                    // 通常のtextarea要素の場合
+                    // For regular textarea elements
                     start = textarea.selectionStart || 0;
                     end = textarea.selectionEnd || 0;
                     selectedText = textarea.value.substring(start, end);
@@ -238,7 +238,7 @@
                     textarea.value = newFullText;
                 }
 
-                // カーソル位置調整
+                // Adjust cursor position
                 const newCursorPos = selectedText.length > 0 ?
                     start + newText.length :
                     start + before.length;
@@ -251,7 +251,7 @@
                     textarea.setSelectionRange(newCursorPos, newCursorPos);
                 }
 
-                // 入力イベントを発火
+                // Fire input event
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
             } catch (e) {
@@ -262,7 +262,7 @@
         window.insertCode = function() {
             const textarea = document.getElementById('editor_content');
 
-            // contenteditable要素かどうかを判定
+            // Check if element is contenteditable
             const isContentEditable = textarea.contentEditable === 'true' ||
                                     textarea.getAttribute('contenteditable') === 'true';
 
@@ -275,15 +275,15 @@
             }
 
             if (selectedText.includes('\n')) {
-                // 改行が含まれている場合はコードブロック
+                // Use code block if line breaks are included
                 insertMarkdown('```\n', '\n```');
             } else {
-                // 単一行の場合はコードスパン
+                // Use code span for single line
                 insertMarkdown('`', '`');
             }
         }
 
-        // プレビュー切り替え機能
+        // Preview toggle functionality
         window.togglePreview = function() {
             if (!textarea || !previewContainer) {
                 console.warn('Preview elements not found');
@@ -294,8 +294,8 @@
                 isPreviewMode = !isPreviewMode;
 
                 if (isPreviewMode) {
-                    // プレビューモードに切り替え
-                    // contenteditable要素かどうかを判定してテキストを取得
+                    // Switch to preview mode
+                    // Check if element is contenteditable and get text
                     const isContentEditable = textarea.contentEditable === 'true' ||
                                             textarea.getAttribute('contenteditable') === 'true';
 
@@ -310,15 +310,15 @@
                     textarea.style.display = 'none';
 
                     if (previewToggle) {
-                        previewToggle.innerHTML = '<i class="bi bi-pencil"></i> 編集に戻る';
+                        previewToggle.innerHTML = '<i class="bi bi-pencil"></i> Back to Edit';
                     }
                 } else {
-                    // 編集モードに戻す
+                    // Return to edit mode
                     previewContainer.style.display = 'none';
                     textarea.style.display = 'block';
 
                     if (previewToggle) {
-                        previewToggle.innerHTML = '<i class="bi bi-eye"></i> プレビュー';
+                        previewToggle.innerHTML = '<i class="bi bi-eye"></i> Preview';
                     }
                 }
             } catch (e) {
@@ -326,7 +326,7 @@
             }
         };
 
-        // 許可するscriptタグのsrc（ホワイトリスト）
+        // Allowed script tag sources (whitelist)
         const ALLOWED_SCRIPT_SOURCES = [
             'https://platform.twitter.com/widgets.js',
             'https://www.youtube.com/iframe_api',
@@ -334,7 +334,7 @@
             'https://www.instagram.com/embed.js'
         ];
 
-        // HTMLエンティティのマップ
+        // HTML entities map
         const HTML_ENTITIES = {
             '&amp;': '&',
             '&lt;': '<',
@@ -381,7 +381,7 @@
             '&crarr;': '↵'
         };
 
-        // Twitter widgets.js の管理
+        // Twitter widgets.js manager
         class TwitterWidgetManager {
             constructor() {
                 this.loaded = false;
@@ -389,7 +389,7 @@
                 this.loadPromise = null;
             }
 
-            // Twitter widgets.js を読み込み
+            // Load Twitter widgets.js
             async loadWidgets() {
                 if (this.loaded && window.twttr && window.twttr.widgets) {
                     return Promise.resolve();
@@ -401,7 +401,7 @@
 
                 this.loading = true;
                 this.loadPromise = new Promise((resolve, reject) => {
-                    // 既に読み込まれている場合
+                    // Already loaded
                     if (window.twttr && window.twttr.widgets) {
                         this.loaded = true;
                         this.loading = false;
@@ -409,13 +409,13 @@
                         return;
                     }
 
-                    // 既存のscriptタグを削除
+                    // Remove existing script tag
                     const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
                     if (existingScript) {
                         existingScript.remove();
                     }
 
-                    // 新しいscriptタグを作成
+                    // Create new script tag
                     const script = document.createElement('script');
                     script.src = 'https://platform.twitter.com/widgets.js';
                     script.async = true;
@@ -436,7 +436,7 @@
 
                     document.head.appendChild(script);
 
-                    // タイムアウト処理
+                    // Timeout handling
                     setTimeout(() => {
                         if (!this.loaded) {
                             this.loading = false;
@@ -448,7 +448,7 @@
                 return this.loadPromise;
             }
 
-            // ツイートを初期化
+            // Initialize tweets
             async initializeTweets(container = document) {
                 try {
                     await this.loadWidgets();
@@ -463,7 +463,7 @@
                 }
             }
 
-            // フォールバック表示
+            // Fallback display
             showFallbackMessage(container) {
                 const tweets = container.querySelectorAll('.twitter-tweet');
                 tweets.forEach(tweet => {
@@ -475,12 +475,12 @@
                         tweet.style.color = '#14171a';
                         tweet.style.fontFamily = 'system-ui, -apple-system, sans-serif';
 
-                        // エラーメッセージを追加
+                        // Add error message
                         const errorDiv = document.createElement('div');
                         errorDiv.style.marginTop = '8px';
                         errorDiv.style.fontSize = '14px';
                         errorDiv.style.color = '#657786';
-                        errorDiv.innerHTML = '⚠️ Twitter埋め込みの読み込みに失敗しました。上記のリンクから直接ツイートを確認してください。';
+                        errorDiv.innerHTML = '⚠️ Failed to load Twitter embed. Please check the tweet directly via the link above.';
 
                         if (!tweet.querySelector('.twitter-error-message')) {
                             errorDiv.className = 'twitter-error-message';
@@ -491,10 +491,10 @@
             }
         }
 
-        // グローバルインスタンス
+        // Global instance
         const twitterManager = new TwitterWidgetManager();
 
-        // 複合的なHTML構造の保護機能（スクリプト実行対応版）
+        // Complex HTML structure protection (script execution support)
         class HTMLSanitizer {
             constructor() {
                 this.protectedElements = [];
@@ -503,14 +503,14 @@
                 this.foundScripts = [];
             }
 
-            // プレースホルダーの生成
+            // Generate placeholder
             generatePlaceholder(type = 'ELEMENT') {
                 const placeholder = `__PROTECTED_${type}_${this.placeholderCounter}__`;
                 this.placeholderCounter++;
                 return placeholder;
             }
 
-            // HTMLエンティティを保護
+            // Protect HTML entities
             protectHtmlEntities(html) {
                 Object.keys(HTML_ENTITIES).forEach(entity => {
                     const regex = new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
@@ -524,16 +524,16 @@
                 return html;
             }
 
-            // Twitter埋め込み全体を保護（スクリプト分離版）
+            // Protect Twitter embeds (script separation)
             protectTwitterEmbeds(html) {
-                // Twitter scriptタグを検出・保存
+                // Detect and save Twitter script tag
                 const scriptRegex = /<script[^>]*src="https:\/\/platform\.twitter\.com\/widgets\.js"[^>]*><\/script>/gi;
                 html = html.replace(scriptRegex, (match) => {
                     this.foundScripts.push(match);
-                    return ''; // scriptタグは削除（後で手動実行）
+                    return ''; // Remove script tag (execute manually later)
                 });
 
-                // blockquoteのみを保護
+                // Protect only blockquote
                 const blockquoteRegex = /<blockquote[^>]*class="twitter-tweet"[^>]*>[\s\S]*?<\/blockquote>/gi;
                 html = html.replace(blockquoteRegex, (match) => {
                     const placeholder = this.generatePlaceholder('TWITTER_BLOCKQUOTE');
@@ -545,7 +545,7 @@
                 return html;
             }
 
-            // 個別のHTMLタグを保護
+            // Protect individual HTML tags
             protectAllowedTags(html) {
                 const allowedTags = [
                     'blockquote', 'p', 'a', 'strong', 'em', 'code', 'del', 'b', 'i', 'u',
@@ -554,7 +554,7 @@
                 ];
 
                 allowedTags.forEach(tag => {
-                    // 自己完結タグ
+                    // Self-closing tags
                     if (['br', 'hr', 'img'].includes(tag)) {
                         const regex = new RegExp(`<${tag}[^>]*\/?>`, 'gi');
                         html = html.replace(regex, (match) => {
@@ -567,7 +567,7 @@
                             return match;
                         });
                     } else {
-                        // 開始タグ
+                        // Opening tag
                         const openRegex = new RegExp(`<${tag}(\\s[^>]*)?\\s*>`, 'gi');
                         html = html.replace(openRegex, (match, attributes) => {
                             if (this.isValidTag(tag, match)) {
@@ -579,7 +579,7 @@
                             return match;
                         });
 
-                        // 終了タグ
+                        // Closing tag
                         const closeRegex = new RegExp(`</${tag}>`, 'gi');
                         html = html.replace(closeRegex, (match) => {
                             const placeholder = this.generatePlaceholder(`${tag.toUpperCase()}_CLOSE`);
@@ -593,7 +593,7 @@
                 return html;
             }
 
-            // タグの妥当性チェック
+            // Tag validity check
             isValidTag(tagName, tagContent) {
                 const tag = tagName.toLowerCase();
 
@@ -623,9 +623,9 @@
                 }
             }
 
-            // 保護されたタグを復元
+            // Restore protected tags
             restoreProtectedElements(html) {
-                // 逆順で復元
+                // Restore in reverse order
                 const sortedPlaceholders = Array.from(this.placeholderMap.entries())
                     .sort((a, b) => {
                         const aNum = parseInt(a[0].match(/_(\d+)__$/)[1]);
@@ -640,12 +640,12 @@
                 return html;
             }
 
-            // 検出されたスクリプトを取得
+            // Get detected scripts
             getFoundScripts() {
                 return this.foundScripts;
             }
 
-            // リセット
+            // Reset
             reset() {
                 this.protectedElements = [];
                 this.placeholderMap.clear();
@@ -654,45 +654,45 @@
             }
         }
 
-        // Markdown→HTML変換（スクリプト実行対応版）
+        // Markdown to HTML conversion (script execution support)
         function convertMarkdownToHtml(markdown) {
             if (!markdown || typeof markdown !== 'string') {
-                return '<p class="text-muted">内容がありません</p>';
+                return '<p class="text-muted">No content available</p>';
             }
 
             try {
                 const sanitizer = new HTMLSanitizer();
                 let html = markdown;
 
-                // 1. HTMLエンティティを保護
+                // 1. Protect HTML entities
                 html = sanitizer.protectHtmlEntities(html);
 
-                // 2. Twitter埋め込みを保護（スクリプト分離）
+                // 2. Protect Twitter embeds (script separation)
                 html = sanitizer.protectTwitterEmbeds(html);
 
-                // 3. 個別のHTMLタグを保護
+                // 3. Protect individual HTML tags
                 html = sanitizer.protectAllowedTags(html);
 
-                // 4. 残りのHTMLをエスケープ
+                // 4. Escape remaining HTML
                 html = html.replace(/&(?![a-zA-Z][a-zA-Z0-9]*;)/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#x27;');
 
-                // 5. Markdown変換
+                // 5. Markdown conversion
                 html = processMarkdown(html);
 
-                // 6. 保護されたHTMLタグとエンティティを復元
+                // 6. Restore protected HTML tags and entities
                 html = sanitizer.restoreProtectedElements(html);
 
-                // 7. 改行をbrタグに変換
+                // 7. Convert line breaks to br tags
                 html = html.replace(/\n/g, '<br>');
 
-                // 8. Twitter scriptが検出された場合は、Twitter widgets を初期化
+                // 8. Initialize Twitter widgets if scripts were detected
                 const foundScripts = sanitizer.getFoundScripts();
                 if (foundScripts.length > 0) {
-                    // 次のティック後にTwitter widgets を初期化
+                    // Initialize Twitter widgets on next tick
                     setTimeout(() => {
                         const previewContainer = document.getElementById('markdownPreview');
                         if (previewContainer && previewContainer.style.display !== 'none') {
@@ -701,23 +701,23 @@
                     }, 100);
                 }
 
-                return html || '<p class="text-muted">プレビュー内容がありません</p>';
+                return html || '<p class="text-muted">No preview content available</p>';
 
             } catch (e) {
                 console.error('Markdown conversion error:', e);
-                return '<p class="text-danger">プレビューエラー: ' + e.message + '</p>';
+                return '<p class="text-danger">Preview error: ' + e.message + '</p>';
             }
         }
 
-        // Markdown処理関数
+        // Markdown processing function
         function processMarkdown(html) {
-            // コードブロック
+            // Code blocks
             html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-light p-3 rounded"><code>$1</code></pre>');
 
-            // インラインコード
+            // Inline code
             html = html.replace(/`([^`]+)`/g, '<code class="bg-light px-1 rounded">$1</code>');
 
-            // 見出し
+            // Headers
             html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
             html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
             html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
@@ -725,25 +725,25 @@
             html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
             html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-            // 水平線
+            // Horizontal rules
             html = html.replace(/^---$/gm, '<hr>');
 
-            // 太字・斜体・打ち消し線
+            // Bold, italic, strikethrough
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
             html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
-            // 引用
+            // Blockquotes
             html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="blockquote border-start border-3 border-secondary ps-3 my-3"><p class="mb-0">$1</p></blockquote>');
 
-            // チェックボックス
+            // Checkboxes
             html = html.replace(/^- \[x\] (.+)$/gm, '<div class="form-check my-2"><input class="form-check-input" type="checkbox" checked disabled><label class="form-check-label text-decoration-line-through">$1</label></div>');
             html = html.replace(/^- \[ \] (.+)$/gm, '<div class="form-check my-2"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">$1</label></div>');
 
-            // 番号付きリスト
+            // Numbered lists
             html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
 
-            // Markdown画像
+            // Markdown images
             html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
                 if (isValidUrl(url)) {
                     return `<img src="${url}" alt="${alt}" class="img-fluid rounded my-2" style="max-width: 100%; height: auto;" loading="lazy">`;
@@ -751,7 +751,7 @@
                 return match;
             });
 
-            // リンク
+            // Links
             html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
                 if (isValidUrl(url)) {
                     return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-pink); text-decoration: none;">${text}</a>`;
@@ -759,16 +759,16 @@
                 return text;
             });
 
-            // 通常のリスト項目
+            // Regular list items
             html = html.replace(/^- (.+)$/gm, '<li class="mb-1">$1</li>');
 
-            // リストをul/ol要素で囲む
+            // Wrap lists in ul/ol elements
             html = wrapListItems(html);
 
             return html;
         }
 
-        // URL検証関数
+        // URL validation function
         function isValidUrl(url) {
             if (!url) return false;
             if (url.startsWith('/')) return true;
@@ -780,7 +780,7 @@
             }
         }
 
-        // リストアイテムをul/ol要素で囲む
+        // Wrap list items in ul/ol elements
         function wrapListItems(html) {
             const lines = html.split('\n');
             let inUnorderedList = false;
@@ -835,17 +835,17 @@
             return processedLines.join('\n');
         }
 
-        // プレビュー切り替え時にTwitter widgets を初期化
+        // Initialize Twitter widgets when preview is toggled
         const originalTogglePreview = window.togglePreview;
         window.togglePreview = function() {
             if (originalTogglePreview) {
                 originalTogglePreview.call(this);
             }
 
-            // プレビューモードに切り替わった場合
+            // When switched to preview mode
             const previewContainer = document.getElementById('markdownPreview');
             if (previewContainer && previewContainer.style.display !== 'none') {
-                // Twitter埋め込みがある場合は初期化
+                // Initialize if Twitter embeds are present
                 const twitterTweets = previewContainer.querySelectorAll('.twitter-tweet');
                 if (twitterTweets.length > 0) {
                     twitterManager.initializeTweets(previewContainer);
@@ -853,21 +853,21 @@
             }
         };
 
-        // Twitter埋め込み用のヘルパー関数
+        // Twitter embed helper function
         window.insertTwitterEmbed = function() {
-            const tweetUrl = prompt('TwitterのツイートURLを入力してください：');
+            const tweetUrl = prompt('Enter Twitter tweet URL:');
             if (!tweetUrl) return;
 
-            // Twitter URL検証
+            // Twitter URL validation
             if (!tweetUrl.match(/^https?:\/\/(twitter\.com|x\.com)\/.+\/status\/\d+/)) {
-                alert('有効なTwitterのツイートURLを入力してください。\n例: https://twitter.com/username/status/1234567890');
+                alert('Please enter a valid Twitter tweet URL.\nExample: https://twitter.com/username/status/1234567890');
                 return;
             }
 
             const textarea = document.getElementById('editor_content');
             if (!textarea) return;
 
-            // 簡単なTwitter埋め込みコードのテンプレート
+            // Basic Twitter embed code template
             const embedCode = `
 <blockquote class="twitter-tweet">
 <p>Loading tweet...</p>
@@ -878,25 +878,25 @@
 
             insertTextAtCursor(textarea, embedCode);
 
-            alert('基本的なTwitter埋め込みを挿入しました。\n\n完全な埋め込みには、Twitter公式から生成されたコードを使用してください。');
+            alert('Basic Twitter embed has been inserted.\n\nFor complete embeds, please use the official code generated from Twitter.');
         };
 
-        // テキストエリアのカーソル位置にテキストを挿入
+        // Insert text at cursor position in textarea
         window.insertTextAtCursor = function(textarea, text) {
             if (!textarea || !text) return;
 
-            // contenteditable要素かどうかを判定
+            // Check if element is contenteditable
             const isContentEditable = textarea.contentEditable === 'true' ||
                                     textarea.getAttribute('contenteditable') === 'true';
 
             if (isContentEditable) {
-                // contenteditable要素の場合
+                // For contenteditable elements
                 const selection = getContentEditableSelection(textarea);
                 const start = selection.start;
                 const end = selection.end;
                 const currentValue = textarea.innerText || textarea.textContent || '';
 
-                // 挿入位置の前後に改行を追加（必要に応じて）
+                // Add line breaks before/after insertion as needed
                 let insertText = text;
                 if (start > 0 && currentValue[start - 1] !== '\n') {
                     insertText = '\n' + insertText;
@@ -912,16 +912,16 @@
                 const newCursorPos = start + insertText.length;
                 setContentEditableSelection(textarea, newCursorPos, newCursorPos);
 
-                // 入力イベントを発火
+                // Fire input event
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
             } else {
-                // 通常のtextarea要素の場合
+                // For regular textarea elements
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const currentValue = textarea.value;
 
-                // 挿入位置の前後に改行を追加（必要に応じて）
+                // Add line breaks before/after insertion as needed
                 let insertText = text;
                 if (start > 0 && currentValue[start - 1] !== '\n') {
                     insertText = '\n' + insertText;
@@ -934,12 +934,12 @@
                 textarea.focus();
                 textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
 
-                // Railsのフォームバリデーション用にchangeイベントを発火
+                // Fire change event for Rails form validation
                 textarea.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
 
-        // 遅延実行のためのデバウンス関数
+        // Debounce function for delayed execution
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
@@ -952,35 +952,35 @@
             };
         }
 
-        // キーボードショートカット
+        // Keyboard shortcuts
         if (textarea) {
             textarea.addEventListener('keydown', function(e) {
                 try {
-                    // Ctrl+B: 太字
+                    // Ctrl+B: Bold
                     if (e.ctrlKey && e.key === 'b') {
                         e.preventDefault();
                         window.insertMarkdown('**', '**');
                     }
 
-                    // Ctrl+I: 斜体
+                    // Ctrl+I: Italic
                     if (e.ctrlKey && e.key === 'i') {
                         e.preventDefault();
                         window.insertMarkdown('*', '*');
                     }
 
-                    // Ctrl+K: リンク
+                    // Ctrl+K: Link
                     if (e.ctrlKey && e.key === 'k') {
                         e.preventDefault();
                         window.insertMarkdown('[', '](https://)');
                     }
 
-                    // Tab: インデント
+                    // Tab: Indent
                     if (e.key === 'Tab') {
                         e.preventDefault();
-                        window.insertMarkdown('  '); // 2スペースのインデント
+                        window.insertMarkdown('  '); // 2-space indent
                     }
 
-                    // Ctrl+Shift+P: プレビュー切り替え
+                    // Ctrl+Shift+P: Toggle preview
                     if (e.ctrlKey && e.shiftKey && e.key === 'P') {
                         e.preventDefault();
                         window.togglePreview();
@@ -994,16 +994,16 @@
         console.log('ponkotsu Markdown editor initialized successfully');
     });
 
-    // エラーハンドリングの強化
+    // Enhanced error handling
     window.addEventListener('error', function(e) {
         if (e.message.includes('markdown') || e.message.includes('slug')) {
             console.error('Markdown Editor Error:', e);
-            // ユーザーフレンドリーなエラー表示
+            // User-friendly error display
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-warning alert-dismissible fade show';
             errorDiv.innerHTML = `
-                <strong>エディタでエラーが発生しました</strong><br>
-                ページを再読み込みしてください。問題が続く場合は管理者にお問い合わせください。
+                <strong>An error occurred in the editor</strong><br>
+                Please reload the page. If the problem persists, contact the administrator.
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
 
