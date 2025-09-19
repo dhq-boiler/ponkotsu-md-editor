@@ -127,6 +127,27 @@
                 textNodes.push(node);
             }
 
+            // テキストノードが見つからない場合のフォールバック
+            if (textNodes.length === 0) {
+                console.warn('No text nodes found, creating fallback text node');
+                // エディタに最低限のテキストノードを作成
+                if (fullText.length === 0) {
+                    element.textContent = ' ';
+                } else {
+                    element.textContent = fullText;
+                }
+                // 再度テキストノードを取得
+                const newWalker = document.createTreeWalker(
+                    element,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                while (node = newWalker.nextNode()) {
+                    textNodes.push(node);
+                }
+            }
+
             // Calculate node and offset from cumulative position
             let currentOffset = 0;
             let startNode = null, startOffset = 0;
@@ -152,6 +173,46 @@
                 currentOffset += nodeLength;
             }
 
+            // 適切なノードが見つからない場合の改良されたフォールバック
+            if (!startNode || !endNode) {
+                console.warn('Could not find appropriate text nodes, using improved fallback');
+
+                // 最後のテキストノードを使用
+                if (textNodes.length > 0) {
+                    const lastNode = textNodes[textNodes.length - 1];
+                    const firstNode = textNodes[0];
+
+                    if (!startNode) {
+                        if (start <= firstNode.textContent.length) {
+                            startNode = firstNode;
+                            startOffset = Math.min(start, firstNode.textContent.length);
+                        } else {
+                            startNode = lastNode;
+                            startOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
+                        }
+                    }
+
+                    if (!endNode) {
+                        if (end <= firstNode.textContent.length) {
+                            endNode = firstNode;
+                            endOffset = Math.min(end, firstNode.textContent.length);
+                        } else {
+                            endNode = lastNode;
+                            endOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
+                        }
+                    }
+                } else {
+                    // 完全なフォールバック: エディタの最後にカーソルを設定
+                    const range = document.createRange();
+                    range.selectNodeContents(element);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    return;
+                }
+            }
+
             if (startNode && endNode) {
                 try {
                     // Adjust boundary values
@@ -169,12 +230,16 @@
                 } catch (e) {
                     console.error('Selection setting failed:', e);
                     // Fallback: set cursor at end of element
-                    const range = document.createRange();
-                    range.selectNodeContents(element);
-                    range.collapse(false);
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
+                    try {
+                        const range = document.createRange();
+                        range.selectNodeContents(element);
+                        range.collapse(false);
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } catch (fallbackError) {
+                        console.error('Fallback selection also failed:', fallbackError);
+                    }
                 }
             } else {
                 console.warn('Could not find appropriate text nodes for selection');
@@ -325,6 +390,241 @@
                 console.error('Error toggling preview:', e);
             }
         };
+
+        // Apply Markdown formatting (generic and tested implementation)
+        function applyMarkdownFormatting(before, after, options = {}) {
+            // Default options
+            const defaultOptions = {
+                cursorBetweenMarkers: true,
+                selectAfterApply: false,
+                preserveSelection: false
+            };
+            const opts = { ...defaultOptions, ...options };
+
+            // Check if we're working with contenteditable element
+            const activeElement = document.activeElement;
+            const isContentEditable = activeElement && activeElement.contentEditable === 'true';
+
+            if (isContentEditable) {
+                return applyMarkdownToContentEditable(activeElement, before, after, opts);
+            } else if (textarea) {
+                return applyMarkdownToTextarea(textarea, before, after, opts);
+            }
+        }
+
+        // Apply Markdown to contenteditable element (main implementation)
+        function applyMarkdownToContentEditable(element, before, after, options) {
+            const info = getContentEditableSelection(element);
+            const text = getContentEditableText(element);
+
+            console.log('Markdown apply debug:');
+            console.log('Full text:', JSON.stringify(text));
+            console.log('Selected text:', JSON.stringify(info.selectedText));
+            console.log('Start:', info.start, 'End:', info.end);
+            console.log('Markers:', JSON.stringify({ before, after }));
+
+            const beforeText = text.substring(0, info.start);
+            const afterText = text.substring(info.end);
+            const selectedText = info.selectedText;
+
+            // Build new text with Markdown formatting
+            let newText;
+            let newCursorPos;
+
+            if (selectedText.length > 0) {
+                // Text is selected - wrap it with markers
+                newText = beforeText + before + selectedText + after + afterText;
+
+                if (options.preserveSelection) {
+                    // Keep the original text selected (but now formatted)
+                    const newStart = info.start + before.length;
+                    const newEnd = newStart + selectedText.length;
+                    setTimeout(() => {
+                        setContentEditableSelection(element, newStart, newEnd);
+                    }, 10);
+                } else if (options.selectAfterApply) {
+                    // Select the entire formatted text including markers
+                    const newStart = info.start;
+                    const newEnd = info.start + before.length + selectedText.length + after.length;
+                    setTimeout(() => {
+                        setContentEditableSelection(element, newStart, newEnd);
+                    }, 10);
+                } else {
+                    // Move cursor after the formatted text
+                    newCursorPos = info.start + before.length + selectedText.length + after.length;
+                }
+            } else {
+                // Cursor position - insert empty markers
+                newText = beforeText + before + after + afterText;
+
+                if (options.cursorBetweenMarkers) {
+                    // Move cursor between markers
+                    newCursorPos = info.start + before.length;
+                } else {
+                    // Move cursor after both markers
+                    newCursorPos = info.start + before.length + after.length;
+                }
+            }
+
+            console.log('New text:', JSON.stringify(newText));
+
+            // Update text content
+            setContentEditableText(element, newText);
+            element.focus();
+
+            // Set cursor position with slight delay for DOM update
+            if (newCursorPos !== undefined) {
+                setTimeout(() => {
+                    setContentEditableSelection(element, newCursorPos, newCursorPos);
+                }, 10);
+            }
+
+            return {
+                success: true,
+                originalText: text,
+                newText: newText,
+                selectedText: selectedText,
+                appliedFormatting: { before, after }
+            };
+        }
+
+        // Apply Markdown to textarea (fallback for traditional textarea)
+        function applyMarkdownToTextarea(textarea, before, after, options) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+
+            const beforeText = textarea.value.substring(0, start);
+            const afterText = textarea.value.substring(end);
+
+            let newText;
+            let newCursorPos;
+
+            if (selectedText.length > 0) {
+                newText = beforeText + before + selectedText + after + afterText;
+
+                if (options.preserveSelection) {
+                    const newStart = start + before.length;
+                    const newEnd = newStart + selectedText.length;
+                    textarea.setSelectionRange(newStart, newEnd);
+                } else if (options.selectAfterApply) {
+                    const newStart = start;
+                    const newEnd = start + before.length + selectedText.length + after.length;
+                    textarea.setSelectionRange(newStart, newEnd);
+                } else {
+                    newCursorPos = start + before.length + selectedText.length + after.length;
+                }
+            } else {
+                newText = beforeText + before + after + afterText;
+
+                if (options.cursorBetweenMarkers) {
+                    newCursorPos = start + before.length;
+                } else {
+                    newCursorPos = start + before.length + after.length;
+                }
+            }
+
+            textarea.value = newText;
+            textarea.focus();
+
+            if (newCursorPos !== undefined) {
+                textarea.setSelectionRange(newCursorPos, newCursorPos);
+            }
+
+            return {
+                success: true,
+                originalText: beforeText + selectedText + afterText,
+                newText: newText,
+                selectedText: selectedText,
+                appliedFormatting: { before, after }
+            };
+        }
+
+        // Specific formatting functions using the generic implementation
+        function applyBold() {
+            return applyMarkdownFormatting('**', '**', { cursorBetweenMarkers: true });
+        }
+
+        function applyItalic() {
+            return applyMarkdownFormatting('*', '*', { cursorBetweenMarkers: true });
+        }
+
+        function applyStrikethrough() {
+            return applyMarkdownFormatting('~~', '~~', { cursorBetweenMarkers: true });
+        }
+
+        function applyCode() {
+            return applyMarkdownFormatting('`', '`', { cursorBetweenMarkers: true });
+        }
+
+        function applyLink() {
+            return applyMarkdownFormatting('[', '](https://)', {
+                cursorBetweenMarkers: false,
+                selectAfterApply: false
+            });
+        }
+
+        function applyHeading(level = 2) {
+            const marker = '#'.repeat(Math.max(1, Math.min(6, level))) + ' ';
+            return applyMarkdownFormatting(marker, '', {
+                cursorBetweenMarkers: false
+            });
+        }
+
+        function applyList() {
+            return applyMarkdownFormatting('- ', '', {
+                cursorBetweenMarkers: false
+            });
+        }
+
+        function applyOrderedList() {
+            return applyMarkdownFormatting('1. ', '', {
+                cursorBetweenMarkers: false
+            });
+        }
+
+        function applyBlockquote() {
+            return applyMarkdownFormatting('> ', '', {
+                cursorBetweenMarkers: false
+            });
+        }
+
+        // Enhanced code function with block detection
+        function applyCodeSmart() {
+            const activeElement = document.activeElement;
+            const isContentEditable = activeElement && activeElement.contentEditable === 'true';
+
+            let selectedText;
+            if (isContentEditable) {
+                const selection = getContentEditableSelection(activeElement);
+                selectedText = selection.selectedText;
+            } else if (textarea) {
+                selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+            }
+
+            if (selectedText && selectedText.includes('\n')) {
+                // Use code block if line breaks are included
+                return applyMarkdownFormatting('```\n', '\n```', {
+                    cursorBetweenMarkers: false
+                });
+            } else {
+                // Use inline code for single line
+                return applyCode();
+            }
+        }
+
+        // Expose functions globally
+        window.applyMarkdownFormatting = applyMarkdownFormatting;
+        window.applyBold = applyBold;
+        window.applyItalic = applyItalic;
+        window.applyStrikethrough = applyStrikethrough;
+        window.applyCode = applyCode;
+        window.applyCodeSmart = applyCodeSmart;
+        window.applyLink = applyLink;
+        window.applyHeading = applyHeading;
+        window.applyList = applyList;
+        window.applyOrderedList = applyOrderedList;
+        window.applyBlockquote = applyBlockquote;
 
         // Allowed script tag sources (whitelist)
         const ALLOWED_SCRIPT_SOURCES = [
@@ -754,7 +1054,7 @@
             // Links
             html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
                 if (isValidUrl(url)) {
-                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-pink); text-decoration: none;">${text}</a>`;
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #e91e63; text-decoration: none;">${text}</a>`;
                 }
                 return text;
             });
