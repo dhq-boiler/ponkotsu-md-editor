@@ -142,7 +142,7 @@
             }
         }
 
-        // 改行を考慮した選択範囲取得（完全修正版）
+        // 改行を考慮した選択範囲取得（精密修正版）
         function getSelectionInfo() {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) {
@@ -168,64 +168,81 @@
                 textNodes.push(node);
             }
 
-            // 開始位置の計算
+            // innerTextベースの位置計算（最も正確）
             let startPos = 0;
-            let foundStart = false;
-            for (let i = 0; i < textNodes.length; i++) {
-                const textNode = textNodes[i];
-                if (textNode === range.startContainer) {
-                    startPos += range.startOffset;
-                    foundStart = true;
-                    break;
-                } else {
-                    startPos += textNode.textContent.length;
-                }
-            }
-
-            // 終了位置の計算
             let endPos = 0;
+            let foundStart = false;
             let foundEnd = false;
+
+            // 全テキストノードを順次処理
+            let cumulativeLength = 0;
+
             for (let i = 0; i < textNodes.length; i++) {
                 const textNode = textNodes[i];
-                if (textNode === range.endContainer) {
-                    endPos += range.endOffset;
+                const nodeText = textNode.textContent;
+                const nodeLength = nodeText.length;
+
+                // 開始位置の特定
+                if (!foundStart && textNode === range.startContainer) {
+                    startPos = cumulativeLength + range.startOffset;
+                    foundStart = true;
+                }
+
+                // 終了位置の特定
+                if (!foundEnd && textNode === range.endContainer) {
+                    endPos = cumulativeLength + range.endOffset;
                     foundEnd = true;
                     break;
-                } else {
-                    endPos += textNode.textContent.length;
                 }
+
+                cumulativeLength += nodeLength;
             }
 
-            // フォールバック: 従来の方法
+            // フォールバック: DOM構造とinnerTextの不整合を考慮
             if (!foundStart || !foundEnd) {
+                console.warn('Using fallback position calculation');
+
+                // 選択範囲の前のテキストを取得
                 const preRange = document.createRange();
                 preRange.selectNodeContents(editor);
                 preRange.setEnd(range.startContainer, range.startOffset);
                 const preText = preRange.toString();
 
-                startPos = preText.length;
-                endPos = startPos + range.toString().length;
+                // 選択範囲のテキストを取得
+                const selectedRangeText = range.toString();
+
+                // innerTextと照合して正確な位置を計算
+                startPos = fullText.indexOf(preText) >= 0 ?
+                    preText.length :
+                    fullText.indexOf(selectedRangeText);
+
+                if (startPos < 0) startPos = 0;
+                endPos = startPos + selectedRangeText.length;
             }
+
+            // 境界値チェック
+            startPos = Math.max(0, Math.min(startPos, fullText.length));
+            endPos = Math.max(startPos, Math.min(endPos, fullText.length));
 
             // 実際の選択テキストをinnerTextから取得
             const selectedText = fullText.substring(startPos, endPos);
 
             // デバッグ情報をコンソールに出力
-            console.log('Selection Debug Info:');
-            console.log('Pre text:', JSON.stringify(fullText.substring(0, startPos)));
-            console.log('Selected text (from range):', JSON.stringify(range.toString()));
-            console.log('Selected text (from innerText):', JSON.stringify(selectedText));
+            console.log('Enhanced Selection Debug Info:');
             console.log('Full text:', JSON.stringify(fullText));
-            console.log(`Start: ${startPos}, End: ${endPos}`);
+            console.log('Full text length:', fullText.length);
+            console.log('Range text:', JSON.stringify(range.toString()));
+            console.log('Selected text (corrected):', JSON.stringify(selectedText));
+            console.log('Calculated positions:', { start: startPos, end: endPos });
 
             return {
                 start: startPos,
                 end: endPos,
-                selectedText: selectedText // innerTextから取得した正確なテキストを使用
+                selectedText: selectedText
             };
         }
 
-        // 指定位置に選択範囲を設定（改行対応強化版）
+        // 指定位置に選択範囲を設定（精密修正版）
         function setSelection(start, end) {
             editor.focus();
 
@@ -233,7 +250,7 @@
 
             // 範囲チェック
             start = Math.max(0, Math.min(start, fullText.length));
-            end = Math.max(0, Math.min(end, fullText.length));
+            end = Math.max(start, Math.min(end, fullText.length));
 
             console.log(`Setting selection: ${start} to ${end} in text of length ${fullText.length}`);
             console.log(`Target substring: "${fullText.substring(start, end)}"`);
@@ -254,13 +271,9 @@
 
             // テキストノードが見つからない場合のフォールバック
             if (textNodes.length === 0) {
-                console.warn('No text nodes found, creating fallback text node');
-                // エディタに最低限のテキストノードを作成
-                if (fullText.length === 0) {
-                    editor.textContent = ' ';
-                } else {
-                    editor.textContent = fullText;
-                }
+                console.warn('No text nodes found, recreating content');
+                editor.textContent = fullText;
+
                 // 再度テキストノードを取得
                 const newWalker = document.createTreeWalker(
                     editor,
@@ -273,8 +286,8 @@
                 }
             }
 
-            // テキストノードの累積位置を計算（改行考慮）
-            let currentOffset = 0;
+            // テキストノードの累積位置を計算
+            let cumulativeOffset = 0;
             let startNode = null, startOffset = 0;
             let endNode = null, endOffset = 0;
 
@@ -283,59 +296,30 @@
                 const nodeLength = textNode.textContent.length;
 
                 // 開始位置の特定
-                if (!startNode && currentOffset + nodeLength >= start) {
+                if (!startNode && cumulativeOffset + nodeLength >= start) {
                     startNode = textNode;
-                    startOffset = start - currentOffset;
+                    startOffset = start - cumulativeOffset;
                 }
 
                 // 終了位置の特定
-                if (!endNode && currentOffset + nodeLength >= end) {
+                if (!endNode && cumulativeOffset + nodeLength >= end) {
                     endNode = textNode;
-                    endOffset = end - currentOffset;
+                    endOffset = end - cumulativeOffset;
                     break;
                 }
 
-                currentOffset += nodeLength;
+                cumulativeOffset += nodeLength;
             }
 
-            // 適切なノードが見つからない場合の改良されたフォールバック
-            if (!startNode || !endNode) {
-                console.warn('Could not find appropriate text nodes, using improved fallback');
+            // 改良されたフォールバック処理
+            if (!startNode && textNodes.length > 0) {
+                startNode = textNodes[textNodes.length - 1];
+                startOffset = Math.min(start, startNode.textContent.length);
+            }
 
-                // 最後のテキストノードを使用
-                if (textNodes.length > 0) {
-                    const lastNode = textNodes[textNodes.length - 1];
-                    const firstNode = textNodes[0];
-
-                    if (!startNode) {
-                        if (start <= firstNode.textContent.length) {
-                            startNode = firstNode;
-                            startOffset = Math.min(start, firstNode.textContent.length);
-                        } else {
-                            startNode = lastNode;
-                            startOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
-                        }
-                    }
-
-                    if (!endNode) {
-                        if (end <= firstNode.textContent.length) {
-                            endNode = firstNode;
-                            endOffset = Math.min(end, firstNode.textContent.length);
-                        } else {
-                            endNode = lastNode;
-                            endOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
-                        }
-                    }
-                } else {
-                    // 完全なフォールバック: エディタの最後にカーソルを設定
-                    const range = document.createRange();
-                    range.selectNodeContents(editor);
-                    range.collapse(false);
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    return;
-                }
+            if (!endNode && textNodes.length > 0) {
+                endNode = textNodes[textNodes.length - 1];
+                endOffset = Math.min(end, endNode.textContent.length);
             }
 
             if (startNode && endNode) {
@@ -344,9 +328,9 @@
                     startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
                     endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
 
-                    console.log(`Setting range: startNode offset ${startOffset}, endNode offset ${endOffset}`);
-                    console.log(`StartNode content: "${startNode.textContent}"`);
-                    console.log(`EndNode content: "${endNode.textContent}"`);
+                    console.log(`Setting range: startNode[${startOffset}], endNode[${endOffset}]`);
+                    console.log(`StartNode: "${startNode.textContent}"`);
+                    console.log(`EndNode: "${endNode.textContent}"`);
 
                     const range = document.createRange();
                     range.setStart(startNode, startOffset);
@@ -356,16 +340,16 @@
                     selection.removeAllRanges();
                     selection.addRange(range);
 
-                    // 確認のため、設定後の選択範囲を取得
-                    const verifySelection = window.getSelection();
-                    if (verifySelection.rangeCount > 0) {
-                        const verifyRange = verifySelection.getRangeAt(0);
-                        console.log(`Verification - selected text: "${verifyRange.toString()}"`);
+                    // 設定後の検証
+                    const verification = window.getSelection();
+                    if (verification.rangeCount > 0) {
+                        const verifyRange = verification.getRangeAt(0);
+                        console.log(`Verification: "${verifyRange.toString()}"`);
                     }
 
                 } catch (e) {
                     console.error('Selection setting failed:', e);
-                    // 最終フォールバック: 要素の末尾にカーソルを設定
+                    // 最終フォールバック
                     try {
                         const range = document.createRange();
                         range.selectNodeContents(editor);
@@ -374,11 +358,11 @@
                         selection.removeAllRanges();
                         selection.addRange(range);
                     } catch (fallbackError) {
-                        console.error('Fallback selection also failed:', fallbackError);
+                        console.error('Fallback selection failed:', fallbackError);
                     }
                 }
             } else {
-                console.warn('Could not find appropriate text nodes for selection');
+                console.warn('Could not establish selection nodes');
             }
         }
 
