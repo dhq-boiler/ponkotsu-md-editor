@@ -1446,17 +1446,9 @@
         return getContentEditableSelection(element);
     };
 
-    // 2. Boldデコレーション（両端trim含む）
+    // 2. Boldデコレーション（trim処理なし、選択範囲そのまま）
     window.testDecorateBold = function(text) {
-        // 両端の「改行・空白・文末記号」をすべて除去（複数連続も対応）
-        let trimmed = text;
-        while (/^[\s\n.,;:!?]+/.test(trimmed)) {
-            trimmed = trimmed.replace(/^[\s\n.,;:!?]+/, '');
-        }
-        while (/[\s\n.,;:!?]+$/.test(trimmed)) {
-            trimmed = trimmed.replace(/[\s\n.,;:!?]+$/, '');
-        }
-        return `**${trimmed}**`;
+        return `**${text}**`;
     };
 
     // 3. テキスト上書き
