@@ -111,13 +111,20 @@
             endPos = Math.max(startPos, Math.min(endPos, fullText.length));
 
             // Get actual selected text from innerText
-            const selectedText = fullText.substring(startPos, endPos);
+            let selectedText = fullText.substring(startPos, endPos);
+            // --- 強化: range.toString()優先 ---
+            const rangeText = range.toString();
+            // どちらが正しいか比較（長い方を優先）
+            if (rangeText.length >= selectedText.length) {
+                selectedText = rangeText;
+            }
 
             // === デバッグ出力 ===
             console.log('[DEBUG] getContentEditableSelection');
             console.log('fullText:', JSON.stringify(fullText));
             console.log('startPos:', startPos, 'endPos:', endPos);
             console.log('selectedText:', JSON.stringify(selectedText));
+            console.log('rangeText:', JSON.stringify(rangeText));
             console.log('textNodes:', textNodes.map(n => n.textContent));
             console.log('range.startContainer:', range.startContainer);
             console.log('range.startOffset:', range.startOffset);
@@ -128,7 +135,7 @@
             return {
                 start: startPos,
                 end: endPos,
-                selectedText: fullText.substring(startPos, endPos)
+                selectedText: selectedText
             };
         }
         // 外部公開
