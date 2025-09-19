@@ -1460,7 +1460,16 @@
 
     // 3. テキスト上書き
     window.testReplaceTextAtRange = function(fullText, start, end, decoratedText, selectedText) {
-        // 選択範囲のstartからendまでをdecoratedTextで置換
+        // 通常はstart～endで置換
+        if (fullText.slice(start, end) === selectedText) {
+            return fullText.slice(0, start) + decoratedText + fullText.slice(end);
+        }
+        // 一致しない場合は、fullText内でselectedTextの最初の出現位置を検索して置換
+        const idx = fullText.indexOf(selectedText, start);
+        if (idx !== -1) {
+            return fullText.slice(0, idx) + decoratedText + fullText.slice(idx + selectedText.length);
+        }
+        // それでも見つからない場合は、start～endで強制置換
         return fullText.slice(0, start) + decoratedText + fullText.slice(end);
     };
 
