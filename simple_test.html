@@ -104,6 +104,15 @@
         <h3>エディタ</h3>
         <div class="toolbar">
             <button class="btn" onclick="applyBold()">Bold適用</button>
+            <button class="btn" onclick="applyItalic()">イタリック適用</button>
+            <button class="btn" onclick="applyCode()">コード適用</button>
+            <button class="btn" onclick="applyStrikethrough()">取り消し線適用</button>
+            <button class="btn" onclick="applyLink()">リンク適用</button>
+            <button class="btn" onclick="applyHeading(1)">見出し1</button>
+            <button class="btn" onclick="applyHeading(2)">見出し2</button>
+            <button class="btn" onclick="applyBlockquote()">引用</button>
+            <button class="btn" onclick="applyUnorderedList()">箇条書き</button>
+            <button class="btn" onclick="applyOrderedList()">番号付きリスト</button>
             <button class="btn" onclick="showSelectionInfo()">選択範囲確認</button>
             <button class="btn" onclick="runAutoTests()">自動テスト実行</button>
             <button class="btn" onclick="clearEditor()">クリア</button>
@@ -111,10 +120,14 @@
 
         <div id="editor"
              class="editor"
-             contenteditable="true">これは最初の行です。
-これは二行目で、ここに長いテキストが含まれています。
-これは三行目です。
-最後の行です。</div>
+             contenteditable="true">content content content
+content content content
+
+
+content content content
+
+
+content content content</div>
 
         <div class="debug-info" id="debugInfo">
             選択範囲の情報がここに表示されます
@@ -142,7 +155,7 @@
             }
         }
 
-        // 改行を考慮した選択範囲取得（精密修正版）
+        // 改行とマークアップを考慮した選択範囲取得（完全修正版）
         function getSelectionInfo() {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) {
@@ -150,95 +163,69 @@
             }
 
             const range = selection.getRangeAt(0);
-
-            // エディタの全テキストを取得（正確な文字列）
             const fullText = editor.innerText;
+            const selectedText = range.toString();
 
-            // 選択範囲の正確な位置を計算するため、全テキストノードを走査
-            const walker = document.createTreeWalker(
-                editor,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
+            console.log('=== Selection Debug ===');
+            console.log('Range toString():', JSON.stringify(selectedText));
+            console.log('Full text:', JSON.stringify(fullText));
 
-            const textNodes = [];
-            let node;
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
-
-            // innerTextベースの位置計算（最も正確）
+            // 最もシンプルで確実な方法：Range APIを直接使用
             let startPos = 0;
             let endPos = 0;
-            let foundStart = false;
-            let foundEnd = false;
 
-            // 全テキストノードを順次処理
-            let cumulativeLength = 0;
+            try {
+                // エディタの最初から選択開始位置までの範囲を作成
+                const beforeRange = document.createRange();
+                beforeRange.selectNodeContents(editor);
+                beforeRange.setEnd(range.startContainer, range.startOffset);
+                const beforeText = beforeRange.toString();
+                startPos = beforeText.length;
 
-            for (let i = 0; i < textNodes.length; i++) {
-                const textNode = textNodes[i];
-                const nodeText = textNode.textContent;
-                const nodeLength = nodeText.length;
+                // エディタの最初から選択終了位置までの範囲を作成
+                const upToEndRange = document.createRange();
+                upToEndRange.selectNodeContents(editor);
+                upToEndRange.setEnd(range.endContainer, range.endOffset);
+                const upToEndText = upToEndRange.toString();
+                endPos = upToEndText.length;
 
-                // 開始位置の特定
-                if (!foundStart && textNode === range.startContainer) {
-                    startPos = cumulativeLength + range.startOffset;
-                    foundStart = true;
+                console.log('Before text length:', beforeText.length);
+                console.log('Up to end text length:', upToEndText.length);
+                console.log('Calculated positions:', { start: startPos, end: endPos });
+
+                // 検証：計算した位置から実際のテキストを取得
+                const verificationText = fullText.substring(startPos, endPos);
+                console.log('Verification text:', JSON.stringify(verificationText));
+                console.log('Match:', verificationText === selectedText);
+
+                // 不一致の場合は選択されたテキストをそのまま使用
+                if (verificationText !== selectedText) {
+                    console.warn('Position calculation mismatch, using selected text as-is');
+                    return {
+                        start: startPos,
+                        end: endPos,
+                        selectedText: selectedText // 実際に選択されたテキストを返す
+                    };
                 }
 
-                // 終了位置の特定
-                if (!foundEnd && textNode === range.endContainer) {
-                    endPos = cumulativeLength + range.endOffset;
-                    foundEnd = true;
-                    break;
-                }
-
-                cumulativeLength += nodeLength;
-            }
-
-            // フォールバック: DOM構造とinnerTextの不整合を考慮
-            if (!foundStart || !foundEnd) {
-                console.warn('Using fallback position calculation');
-
-                // 選択範囲の前のテキストを取得
-                const preRange = document.createRange();
-                preRange.selectNodeContents(editor);
-                preRange.setEnd(range.startContainer, range.startOffset);
-                const preText = preRange.toString();
-
-                // 選択範囲のテキストを取得
-                const selectedRangeText = range.toString();
-
-                // innerTextと照合して正確な位置を計算
-                startPos = fullText.indexOf(preText) >= 0 ?
-                    preText.length :
-                    fullText.indexOf(selectedRangeText);
-
-                if (startPos < 0) startPos = 0;
-                endPos = startPos + selectedRangeText.length;
+            } catch (error) {
+                console.error('Range calculation failed:', error);
+                // エラー時のフォールバック
+                return {
+                    start: 0,
+                    end: selectedText.length,
+                    selectedText: selectedText
+                };
             }
 
             // 境界値チェック
             startPos = Math.max(0, Math.min(startPos, fullText.length));
             endPos = Math.max(startPos, Math.min(endPos, fullText.length));
 
-            // 実際の選択テキストをinnerTextから取得
-            const selectedText = fullText.substring(startPos, endPos);
-
-            // デバッグ情報をコンソールに出力
-            console.log('Enhanced Selection Debug Info:');
-            console.log('Full text:', JSON.stringify(fullText));
-            console.log('Full text length:', fullText.length);
-            console.log('Range text:', JSON.stringify(range.toString()));
-            console.log('Selected text (corrected):', JSON.stringify(selectedText));
-            console.log('Calculated positions:', { start: startPos, end: endPos });
-
             return {
                 start: startPos,
                 end: endPos,
-                selectedText: selectedText
+                selectedText: selectedText // 常に実際の選択テキストを返す
             };
         }
 
@@ -366,68 +353,414 @@
             }
         }
 
-        // Bold適用（完全修正版）
+        // 各種マークアップ適用関数（改行保持版）
         function applyBold() {
-            const info = getSelectionInfo();
-            const text = editor.innerText || editor.textContent || '';
+            applyMarkup('**');
+        }
+
+        function applyItalic() {
+            applyMarkup('*');
+        }
+
+        function applyCode() {
+            applyMarkup('`');
+        }
+
+        function applyStrikethrough() {
+            applyMarkup('~~');
+        }
+
+        function applyLink() {
+            const url = prompt('リンクURLを入力してください:', 'https://');
+            if (url) {
+                applyMarkup('[', `](${url})`);
+            }
+        }
+
+        function applyHeading(level = 1) {
+            const markupBefore = '#'.repeat(level) + ' ';
+            const selection = window.getSelection();
+
+            if (selection.rangeCount === 0 || selection.getRangeAt(0).toString().length === 0) {
+                // 選択がない場合は行の先頭に見出しマークを追加
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+
+                // 現在行の開始位置を探す
+                let lineStart = currentPos;
+                while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+                    lineStart--;
+                }
+
+                insertTextAtPosition(lineStart, markupBefore);
+                setTimeout(() => {
+                    setCaretPosition(currentPos + markupBefore.length);
+                    showSelectionInfo();
+                }, 50);
+            } else {
+                // 選択がある場合は通常のマークアップとして適用
+                applyMarkup(markupBefore, '');
+            }
+        }
+
+        function applyBlockquote() {
+            const selection = window.getSelection();
+
+            if (selection.rangeCount === 0 || selection.getRangeAt(0).toString().length === 0) {
+                // 選択がない場合は行の先頭に引用マークを追加
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+
+                // 現在行の開始位置を探す
+                let lineStart = currentPos;
+                while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+                    lineStart--;
+                }
+
+                insertTextAtPosition(lineStart, '> ');
+                setTimeout(() => {
+                    setCaretPosition(currentPos + 2);
+                    showSelectionInfo();
+                }, 50);
+            } else {
+                // 選択がある場合は通常のマークアップとして適用
+                applyMarkup('> ', '');
+            }
+        }
+
+        function applyOrderedList() {
+            const selection = window.getSelection();
+
+            if (selection.rangeCount === 0 || selection.getRangeAt(0).toString().length === 0) {
+                // 選択がない場合は行の先頭にリストマークを追加
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+
+                // 現在行の開始位置を探す
+                let lineStart = currentPos;
+                while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+                    lineStart--;
+                }
+
+                insertTextAtPosition(lineStart, '1. ');
+                setTimeout(() => {
+                    setCaretPosition(currentPos + 3);
+                    showSelectionInfo();
+                }, 50);
+            } else {
+                // 選択がある場合は通常のマークアップとして適用
+                applyMarkup('1. ', '');
+            }
+        }
+
+        function applyUnorderedList() {
+            const selection = window.getSelection();
+
+            if (selection.rangeCount === 0 || selection.getRangeAt(0).toString().length === 0) {
+                // 選択がない場合は行の先頭にリストマークを追加
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+
+                // 現在行の開始位置を探す
+                let lineStart = currentPos;
+                while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+                    lineStart--;
+                }
+
+                insertTextAtPosition(lineStart, '- ');
+                setTimeout(() => {
+                    setCaretPosition(currentPos + 2);
+                    showSelectionInfo();
+                }, 50);
+            } else {
+                // 選択がある場合は通常のマークアップとして適用
+                applyMarkup('- ', '');
+            }
+        }
+
+        // Bold適用（位置計算完全修正版 - indexOf未使用）
+        function applyBold() {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) {
+                // 選択がない場合は現在位置にBold記号を挿入
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+                const newText = text.substring(0, currentPos) + '****' + text.substring(currentPos);
+                editor.innerText = newText;
+                setTimeout(() => {
+                    setCaretPosition(currentPos + 2);
+                    showSelectionInfo();
+                }, 50);
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
 
             console.log('Bold apply debug:');
-            console.log('Full text:', JSON.stringify(text));
-            console.log('Selected text (corrected):', JSON.stringify(info.selectedText));
-            console.log('Start:', info.start, 'End:', info.end);
+            console.log('Selected text:', JSON.stringify(selectedText));
 
-            const beforeText = text.substring(0, info.start);
-            const afterText = text.substring(info.end);
-            const selectedText = info.selectedText; // 修正されたgetSelectionInfoから取得
-
-            // 新しいテキストを構築
-            let newText;
-            if (selectedText.length > 0) {
-                // テキストが選択されている場合
-                newText = beforeText + '**' + selectedText + '**' + afterText;
-            } else {
-                // カーソル位置の場合
-                newText = beforeText + '****' + afterText;
+            if (selectedText.length === 0) {
+                // 選択がない場合の処理
+                const currentPos = getCaretPosition();
+                const text = editor.innerText;
+                const newText = text.substring(0, currentPos) + '****' + text.substring(currentPos);
+                editor.innerText = newText;
+                setTimeout(() => {
+                    setCaretPosition(currentPos + 2);
+                    showSelectionInfo();
+                }, 50);
+                return;
             }
 
-            console.log('New text:', JSON.stringify(newText));
+            // DOM操作で直接置換（改行を保持）
+            try {
+                console.log('Before text length:', range.startContainer.textContent?.length);
+                console.log('Selected text:', JSON.stringify(selectedText));
 
-            // テキストを更新
-            editor.innerText = newText;
-            editor.focus();
+                // 新しいテキストノードを作成
+                const newText = '**' + selectedText + '**';
+                const textNode = document.createTextNode(newText);
 
-            // カーソル位置を調整
-            let newCursorPos;
-            if (selectedText.length > 0) {
-                // 選択されたテキストの後ろに移動
-                newCursorPos = info.start + 2 + selectedText.length + 2;
-            } else {
-                // Bold記号の間に移動
-                newCursorPos = info.start + 2;
+                // 選択範囲を削除して新しいテキストを挿入
+                range.deleteContents();
+                range.insertNode(textNode);
+
+                // カーソル位置を新しいテキストの後ろに設定
+                const newRange = document.createRange();
+                newRange.setStartAfter(textNode);
+                newRange.collapse(true);
+
+                const newSelection = window.getSelection();
+                newSelection.removeAllRanges();
+                newSelection.addRange(newRange);
+
+                console.log('DOM replacement completed successfully');
+
+                setTimeout(() => {
+                    showSelectionInfo();
+                }, 50);
+
+            } catch (error) {
+                console.error('DOM replacement failed:', error);
+                // フォールバック: 文字列操作（改行保持を試行）
+                try {
+                    const beforeRange = document.createRange();
+                    beforeRange.selectNodeContents(editor);
+                    beforeRange.setEnd(range.startContainer, range.startOffset);
+                    const beforeText = beforeRange.toString();
+
+                    const afterRange = document.createRange();
+                    afterRange.selectNodeContents(editor);
+                    afterRange.setStart(range.endContainer, range.endOffset);
+                    const afterText = afterRange.toString();
+
+                    // innerHTML を使用して改行を保持
+                    const currentHTML = editor.innerHTML;
+                    const beforeHTML = currentHTML.substring(0, beforeText.length);
+                    const afterHTML = currentHTML.substring(beforeText.length + selectedText.length);
+
+                    // 改行を <br> に変換
+                    const selectedHTML = selectedText.replace(/\n/g, '<br>');
+                    const newHTML = beforeHTML + '**' + selectedHTML + '**' + afterHTML;
+
+                    editor.innerHTML = newHTML;
+
+                    const newCursorPos = beforeText.length + 2 + selectedText.length + 2;
+                    setTimeout(() => {
+                        setCaretPosition(newCursorPos);
+                        showSelectionInfo();
+                    }, 50);
+
+                } catch (fallbackError) {
+                    console.error('Fallback replacement failed:', fallbackError);
+                    // 最終フォールバック
+                    const fullText = editor.innerText;
+                    const newText = fullText.replace(selectedText, '**' + selectedText + '**');
+                    editor.innerText = newText;
+                    setTimeout(() => {
+                        showSelectionInfo();
+                    }, 50);
+                }
+            }
+        }
+
+        // カーソル位置取得（シンプル版）
+        function getCaretPosition() {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return 0;
+
+            const range = selection.getRangeAt(0);
+            const beforeRange = document.createRange();
+            beforeRange.selectNodeContents(editor);
+            beforeRange.setEnd(range.startContainer, range.startOffset);
+            return beforeRange.toString().length;
+        }
+
+        // カーソル位置設定（シンプル版）
+        function setCaretPosition(position) {
+            const text = editor.innerText;
+            position = Math.max(0, Math.min(position, text.length));
+
+            // テキストノードを取得
+            const walker = document.createTreeWalker(
+                editor,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentPos = 0;
+            let node;
+
+            while (node = walker.nextNode()) {
+                const nodeLength = node.textContent.length;
+
+                if (currentPos + nodeLength >= position) {
+                    const offset = position - currentPos;
+                    const range = document.createRange();
+                    range.setStart(node, offset);
+                    range.collapse(true);
+
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    return;
+                }
+
+                currentPos += nodeLength;
             }
 
-            // 少し遅延してから選択範囲を設定（DOM更新を待つ）
-            setTimeout(() => {
-                setSelection(newCursorPos, newCursorPos);
-                showSelectionInfo();
-            }, 10);
+            // フォールバック: 最後に設定
+            if (editor.childNodes.length > 0) {
+                const range = document.createRange();
+                range.selectNodeContents(editor);
+                range.collapse(false);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
         }
 
-        // 選択範囲情報表示
-        function showSelectionInfo() {
-            const info = getSelectionInfo();
-            const debugDiv = document.getElementById('debugInfo');
+        // 汎用的なテキスト装飾適用関数（改行保持版）
+        function applyMarkup(beforeMarkup, afterMarkup = null) {
+            // afterMarkupが指定されていない場合、beforeMarkupと同じにする
+            if (afterMarkup === null) {
+                afterMarkup = beforeMarkup;
+            }
 
-            debugDiv.innerHTML = `
-                <strong>選択範囲情報:</strong><br>
-                開始位置: ${info.start}<br>
-                終了位置: ${info.end}<br>
-                選択テキスト: "${info.selectedText}"<br>
-                選択長: ${info.selectedText.length}<br>
-                全体テキスト長: ${editor.innerText.length}
-            `;
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) {
+                // 選択がない場合は現在位置にマークアップを挿入
+                const currentPos = getCaretPosition();
+                insertTextAtPosition(currentPos, beforeMarkup + afterMarkup);
+                setTimeout(() => {
+                    setCaretPosition(currentPos + beforeMarkup.length);
+                    showSelectionInfo();
+                }, 50);
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+
+            console.log('Markup apply debug:');
+            console.log('Selected text:', JSON.stringify(selectedText));
+            console.log('Before markup:', JSON.stringify(beforeMarkup));
+            console.log('After markup:', JSON.stringify(afterMarkup));
+
+            if (selectedText.length === 0) {
+                // 選択がない場合の処理
+                const currentPos = getCaretPosition();
+                insertTextAtPosition(currentPos, beforeMarkup + afterMarkup);
+                setTimeout(() => {
+                    setCaretPosition(currentPos + beforeMarkup.length);
+                    showSelectionInfo();
+                }, 50);
+                return;
+            }
+
+            // Range APIを使って直接置換（改行を保持）
+            try {
+                const newText = beforeMarkup + selectedText + afterMarkup;
+
+                // 選択範囲を新しいテキストで置換
+                range.deleteContents();
+                const textNode = document.createTextNode(newText);
+                range.insertNode(textNode);
+
+                // カーソル位置を調整（新しいテキストの後ろ）
+                const newRange = document.createRange();
+                newRange.setStartAfter(textNode);
+                newRange.collapse(true);
+
+                const newSelection = window.getSelection();
+                newSelection.removeAllRanges();
+                newSelection.addRange(newRange);
+
+                console.log('Text replaced successfully using Range API');
+
+            } catch (error) {
+                console.error('Range replacement failed:', error);
+                // フォールバック: 文字列操作で置換
+                const fullText = editor.innerText;
+                const beforeRange = document.createRange();
+                beforeRange.selectNodeContents(editor);
+                beforeRange.setEnd(range.startContainer, range.startOffset);
+                const beforeText = beforeRange.toString();
+
+                const afterRange = document.createRange();
+                afterRange.selectNodeContents(editor);
+                afterRange.setStart(range.endContainer, range.endOffset);
+                const afterText = afterRange.toString();
+
+                const newFullText = beforeText + beforeMarkup + selectedText + afterMarkup + afterText;
+                editor.innerText = newFullText;
+
+                const newCursorPos = beforeText.length + beforeMarkup.length + selectedText.length + afterMarkup.length;
+                setTimeout(() => {
+                    setCaretPosition(newCursorPos);
+                    showSelectionInfo();
+                }, 50);
+            }
         }
 
+        // 指定位置にテキストを挿入（改行保持版）
+        function insertTextAtPosition(position, text) {
+            const fullText = editor.innerText;
+            const walker = document.createTreeWalker(
+                editor,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentPos = 0;
+            let node;
+
+            while (node = walker.nextNode()) {
+                const nodeLength = node.textContent.length;
+
+                if (currentPos + nodeLength >= position) {
+                    const offset = position - currentPos;
+
+                    // テキストノード内の指定位置でテキストを分割して挿入
+                    const range = document.createRange();
+                    range.setStart(node, offset);
+                    range.collapse(true);
+
+                    const textNode = document.createTextNode(text);
+                    range.insertNode(textNode);
+                    return;
+                }
+
+                currentPos += nodeLength;
+            }
+
+            // フォールバック: 最後に追加
+            const textNode = document.createTextNode(text);
+            editor.appendChild(textNode);
+        }
         // エディタクリア
         function clearEditor() {
             editor.innerText = '';
@@ -697,14 +1030,6 @@ This time, I want to try different dishes from the menu.`
                         },
                         {
                             target: 'next week',
-                            expectedAfterStep: `Last night, I went to a new restaurant with my **friend**.
-The food was delicious, especially the **pasta dish**.
-The **atmosphere** in the restaurant was great, and we enjoyed our meal slowly.
-We are planning to visit the same restaurant again **next week**.
-This time, I want to try different dishes from the menu.`
-                        },
-                        {
-                            target: 'different dishes',
                             expectedAfterStep: `Last night, I went to a new restaurant with my **friend**.
 The food was delicious, especially the **pasta dish**.
 The **atmosphere** in the restaurant was great, and we enjoyed our meal slowly.
@@ -1073,8 +1398,8 @@ Performance optimization requires careful **analysis** and **testing procedures*
                                                 <p style="margin: 5px 0; font-size: 16px;">成功: ${allTestsPassed}/${totalMultiTests} テストケース</p>
                                                 <p style="margin: 5px 0; font-size: 14px;">
                                                     ${allTestsPassed === totalMultiTests ?
-                                                        '🎉 全てのテストが成功しました！' :
-                                                        '⚠️ 一部のテストが失敗しました。詳細を確認してください。'}
+                                                        '���� 全てのテストが成功しました！' :
+                                                        '⚠�� 一部のテストが失敗しました。詳細を確認してください。'}
                                                 </p>
                                             `;
                                             resultsDiv.appendChild(finalSummaryDiv);
@@ -1108,6 +1433,22 @@ Performance optimization requires careful **analysis** and **testing procedures*
             // テスト開始
             runNextMultiTest();
         }
+
+        // 選択範囲情報表示
+        function showSelectionInfo() {
+            const info = getSelectionInfo();
+            const debugDiv = document.getElementById('debugInfo');
+
+            debugDiv.innerHTML = `
+                <strong>選択範囲情報:</strong><br>
+                開始位置: ${info.start}<br>
+                終了位置: ${info.end}<br>
+                選択テキスト: "${info.selectedText}"<br>
+                選択長: ${info.selectedText.length}<br>
+                全体テキスト長: ${editor.innerText.length}
+            `;
+        }
+
         // イベントリスナー
         editor.addEventListener('mouseup', showSelectionInfo);
         editor.addEventListener('keyup', showSelectionInfo);
