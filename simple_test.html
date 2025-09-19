@@ -730,44 +730,164 @@ This time, I want to try **different dishes** from the menu.`
                     ]
                 },
                 {
-                    name: '日本語技術文書・複数箇所Bold適用テスト',
-                    setup: `プログラミングにおいて、変数の命名は非常に重要な要素です。
-適切な変数名を付けることで、コードの可読性が向上します。
-また、関数の設計も同様に重要で、単一責任の原則に従うべきです。
-デバッグ作業では、ログ出力を適切に活用することが効果的です。
-最終的に、良いコードは保守性と拡張性を兼ね備えています。`,
+                    name: '同一行内・複数箇所Bold適用テスト（日本語）',
+                    setup: `これは重要な概念と基本的な原理を説明する文章です。
+プログラミングでは変数と関数とクラスが重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`,
                     steps: [
                         {
-                            target: '変数の命名',
-                            expectedAfterStep: `プログラミングにおいて、**変数の命名**は非常に重要な要素です。
-適切な変数名を付けることで、コードの可読性が向上します。
-また、関数の設計も同様に重要で、単一責任の原則に従うべきです。
-デバッグ作業では、ログ出力を適切に活用することが効果的です。
-最終的に、良いコードは保守性と拡張性を兼ね備えています。`
+                            target: '重要な概念',
+                            expectedAfterStep: `これは**重要な概念**と基本的な原理を説明する文章です。
+プログラミングでは変数と関数とクラスが重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`
                         },
                         {
-                            target: 'コードの可読性',
-                            expectedAfterStep: `プログラミングにおいて、**変数の命名**は非常に重要な要素です。
-適切な変数名を付けることで、**コードの可読性**が向上します。
-また、関数の設計も同様に重要で、単一責任の原則に従うべきです。
-デバッグ作業では、ログ出力を適切に活用することが効果的です。
-最終的に、良いコードは保守性と拡張性を兼ね備えています。`
+                            target: '基本的な原理',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは変数と関数とクラスが重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`
                         },
                         {
-                            target: '単一責任の原則',
-                            expectedAfterStep: `プログラミングにおいて、**変数の命名**は非常に重要な要素です。
-適切な変数名を付けることで、**コードの可読性**が向上します。
-また、関数の設計も同様に重要で、**単一責任の原則**に従うべきです。
-デバッグ作業では、ログ出力を適切に活用することが効果的です。
-最終的に、良いコードは保守性と拡張性を兼ね備えています。`
+                            target: '変数',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と関数とクラスが重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`
                         },
                         {
-                            target: 'ログ出力',
-                            expectedAfterStep: `プログラミングにおいて、**変数の命名**は非常に重要な要素です。
-適切な変数名を付けることで、**コードの可読性**が向上します。
-また、関数の設計も同様に重要で、**単一責任の原則**に従うべきです。
-デバッグ作業では、**ログ出力**を適切に活用することが効果的です。
-最終的に、良いコードは保守性と拡張性を兼ね備えています。`
+                            target: '関数',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と**関数**とクラスが重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`
+                        },
+                        {
+                            target: 'クラス',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と**関数**と**クラス**が重要な要素になります。
+マークダウンでは見出しと強調とリンクの使い方を覚えましょう。`
+                        },
+                        {
+                            target: '見出し',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と**関数**と**クラス**が重要な要素になります。
+マークダウンでは**見出し**と強調とリンクの使い方を覚えましょう。`
+                        },
+                        {
+                            target: '強調',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と**関数**と**クラス**が重要な要素になります。
+マークダウンでは**見出し**と**強調**とリンクの使い方を覚えましょう。`
+                        },
+                        {
+                            target: 'リンク',
+                            expectedAfterStep: `これは**重要な概念**と**基本的な原理**を説明する文章です。
+プログラミングでは**変数**と**関数**と**クラス**が重要な要素になります。
+マークダウンでは**見出し**と**強調**と**リンク**の使い方を覚えましょう。`
+                        }
+                    ]
+                },
+                {
+                    name: '同一行内・複数箇所Bold適用テスト（英語）',
+                    setup: `HTML and CSS and JavaScript are fundamental web technologies.
+We use arrays and objects and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`,
+                    steps: [
+                        {
+                            target: 'HTML',
+                            expectedAfterStep: `**HTML** and CSS and JavaScript are fundamental web technologies.
+We use arrays and objects and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'CSS',
+                            expectedAfterStep: `**HTML** and **CSS** and JavaScript are fundamental web technologies.
+We use arrays and objects and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'JavaScript',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use arrays and objects and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'arrays',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and objects and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'objects',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and **objects** and functions in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'functions',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and **objects** and **functions** in modern programming.
+The server handles requests and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'requests',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and **objects** and **functions** in modern programming.
+The server handles **requests** and responses and database operations efficiently.`
+                        },
+                        {
+                            target: 'responses',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and **objects** and **functions** in modern programming.
+The server handles **requests** and **responses** and database operations efficiently.`
+                        },
+                        {
+                            target: 'database operations',
+                            expectedAfterStep: `**HTML** and **CSS** and **JavaScript** are fundamental web technologies.
+We use **arrays** and **objects** and **functions** in modern programming.
+The server handles **requests** and **responses** and **database operations** efficiently.`
+                        }
+                    ]
+                },
+                {
+                    name: '混合パターン・複数箇所Bold適用テスト',
+                    setup: `データベース設計では正規化と最適化が重要です。
+Performance optimization requires careful analysis and testing procedures.
+セキュリティ対策として認証と暗号化を実装する必要があります。`,
+                    steps: [
+                        {
+                            target: '正規化',
+                            expectedAfterStep: `データベース設計では**正規化**と最適化が重要です。
+Performance optimization requires careful analysis and testing procedures.
+セキュリティ対策として認証と暗号化を実装する必要があります。`
+                        },
+                        {
+                            target: '最適化',
+                            expectedAfterStep: `データベース設計では**正規化**と**最適化**が重要です。
+Performance optimization requires careful analysis and testing procedures.
+セキュリティ対策として認証と暗号化を実装する必要があります。`
+                        },
+                        {
+                            target: 'analysis',
+                            expectedAfterStep: `データベース設計では**正規化**と**最適化**が重要です。
+Performance optimization requires careful **analysis** and testing procedures.
+セキュリティ対策として認証と暗号化を実装する必要があります。`
+                        },
+                        {
+                            target: 'testing procedures',
+                            expectedAfterStep: `データベース設計では**正規化**と**最適化**が重要です。
+Performance optimization requires careful **analysis** and **testing procedures**.
+セキュリティ対策として認証と暗号化を実装する必要があります。`
+                        },
+                        {
+                            target: '認証',
+                            expectedAfterStep: `データベース設計では**正規化**と**最適化**が重要です。
+Performance optimization requires careful **analysis** and **testing procedures**.
+セキュリティ対策として**認証**と暗号化を実装する必要があります。`
+                        },
+                        {
+                            target: '暗号化',
+                            expectedAfterStep: `データベース設計では**正規化**と**最適化**が重要です。
+Performance optimization requires careful **analysis** and **testing procedures**.
+セキュリティ対策として**認証**と**暗号化**を実装する必要があります。`
                         }
                     ]
                 }
