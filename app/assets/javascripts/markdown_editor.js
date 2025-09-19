@@ -30,7 +30,7 @@
 
         let isPreviewMode = false;
 
-        // contenteditable要素用の選択範囲取得・設定機能（改行対応版）
+        // contenteditable要素用の選択範囲取得・設定機能
         function getContentEditableSelection(element) {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) {
@@ -38,8 +38,9 @@
             }
 
             const range = selection.getRangeAt(0);
+            const fullText = element.innerText;
 
-            // テキストノードを順次処理して正確な位置を計算
+            // テキストノードを走査して正確な位置を計算
             const walker = document.createTreeWalker(
                 element,
                 NodeFilter.SHOW_TEXT,
@@ -47,44 +48,72 @@
                 false
             );
 
-            let currentOffset = 0;
-            let startOffset = 0;
-            let endOffset = 0;
-            let foundStart = false;
-            let foundEnd = false;
-
+            const textNodes = [];
             let node;
             while (node = walker.nextNode()) {
-                const nodeText = node.textContent;
-                const nodeLength = nodeText.length;
-
-                // 開始位置の検出
-                if (!foundStart && node === range.startContainer) {
-                    startOffset = currentOffset + range.startOffset;
-                    foundStart = true;
-                }
-
-                // 終了位置の検出
-                if (!foundEnd && node === range.endContainer) {
-                    endOffset = currentOffset + range.endOffset;
-                    foundEnd = true;
-                    break;
-                }
-
-                currentOffset += nodeLength;
+                textNodes.push(node);
             }
 
-            // 選択されたテキストを取得
-            const selectedText = range.toString();
+            // 開始位置の計算
+            let startPos = 0;
+            let foundStart = false;
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                if (textNode === range.startContainer) {
+                    startPos += range.startOffset;
+                    foundStart = true;
+                    break;
+                } else {
+                    startPos += textNode.textContent.length;
+                }
+            }
+
+            // 終了位置の計算
+            let endPos = 0;
+            let foundEnd = false;
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                if (textNode === range.endContainer) {
+                    endPos += range.endOffset;
+                    foundEnd = true;
+                    break;
+                } else {
+                    endPos += textNode.textContent.length;
+                }
+            }
+
+            // フォールバック処理
+            if (!foundStart || !foundEnd) {
+                const preRange = document.createRange();
+                preRange.selectNodeContents(element);
+                preRange.setEnd(range.startContainer, range.startOffset);
+                const preText = preRange.toString();
+
+                startPos = preText.length;
+                endPos = startPos + range.toString().length;
+            }
+
+            // innerTextから正確な選択テキストを取得
+            const selectedText = fullText.substring(startPos, endPos);
 
             return {
-                start: startOffset,
-                end: endOffset,
+                start: startPos,
+                end: endPos,
                 selectedText: selectedText
             };
         }
 
+        // 指定位置に選択範囲を設定
         function setContentEditableSelection(element, start, end) {
+            element.focus();
+
+            const fullText = element.innerText;
+
+            // 範囲チェック
+            start = Math.max(0, Math.min(start, fullText.length));
+            end = Math.max(0, Math.min(end, fullText.length));
+
+            // テキストノードを取得
             const walker = document.createTreeWalker(
                 element,
                 NodeFilter.SHOW_TEXT,
@@ -92,64 +121,63 @@
                 false
             );
 
-            let currentOffset = 0;
-            let startNode = null, startNodeOffset = 0;
-            let endNode = null, endNodeOffset = 0;
-
+            const textNodes = [];
             let node;
             while (node = walker.nextNode()) {
-                const nodeText = node.textContent;
-                const nodeLength = nodeText.length;
+                textNodes.push(node);
+            }
 
-                // 開始位置の設定
-                if (startNode === null && currentOffset + nodeLength >= start) {
-                    startNode = node;
-                    startNodeOffset = start - currentOffset;
+            // 累積位置からノードとオフセットを計算
+            let currentOffset = 0;
+            let startNode = null, startOffset = 0;
+            let endNode = null, endOffset = 0;
+
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                const nodeLength = textNode.textContent.length;
+
+                // 開始位置の特定
+                if (!startNode && currentOffset + nodeLength >= start) {
+                    startNode = textNode;
+                    startOffset = start - currentOffset;
                 }
 
-                // 終了位置の設定
-                if (endNode === null && currentOffset + nodeLength >= end) {
-                    endNode = node;
-                    endNodeOffset = end - currentOffset;
+                // 終了位置の特定
+                if (!endNode && currentOffset + nodeLength >= end) {
+                    endNode = textNode;
+                    endOffset = end - currentOffset;
                     break;
                 }
 
                 currentOffset += nodeLength;
             }
 
-            // 範囲が見つからない場合の処理
-            if (!startNode || !endNode) {
-                // 要素の最後にカーソルを設定
-                const lastWalker = document.createTreeWalker(
-                    element,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-                let lastNode = null;
-                while (lastNode = lastWalker.nextNode()) {
-                    // 最後のテキストノードを取得
-                }
-                if (lastNode) {
-                    startNode = endNode = lastNode;
-                    startNodeOffset = endNodeOffset = lastNode.textContent.length;
-                }
-            }
-
             if (startNode && endNode) {
                 try {
+                    // 境界値の調整
+                    startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
+                    endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
+
                     const range = document.createRange();
-                    range.setStart(startNode, Math.min(startNodeOffset, startNode.textContent.length));
-                    range.setEnd(endNode, Math.min(endNodeOffset, endNode.textContent.length));
+                    range.setStart(startNode, startOffset);
+                    range.setEnd(endNode, endOffset);
 
                     const selection = window.getSelection();
                     selection.removeAllRanges();
                     selection.addRange(range);
+
                 } catch (e) {
-                    console.warn('Failed to set selection:', e);
-                    // フォールバック: 要素の最後にカーソルを設定
-                    element.focus();
+                    console.error('Selection setting failed:', e);
+                    // フォールバック: 要素の末尾にカーソルを設定
+                    const range = document.createRange();
+                    range.selectNodeContents(element);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
                 }
+            } else {
+                console.warn('Could not find appropriate text nodes for selection');
             }
         }
 
