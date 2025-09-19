@@ -1,7 +1,7 @@
 <%
   _form = locals[:form]
   _content = locals[:content]
-  placeholder = locals[:options][:placeholder]
+  _placeholder = locals[:options][:placeholder]
 %>
 
 <div class="editor-container">
@@ -13,7 +13,7 @@
   </div>
 
   <div id="editor_content_placeholder">
-    <%= placeholder %>
+    <%= _placeholder %>
   </div>
 
   <%= _form.hidden_field _content, id: "content_hidden_field" %>
