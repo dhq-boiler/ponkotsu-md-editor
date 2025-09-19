@@ -10,6 +10,7 @@ module PonkotsuMdEditor
   module Helpers
     # Renders a Markdown editor component with the specified content and options
     #
+    # @param form [ActionView::Helpers::FormBuilder] Form builder object
     # @param content [String] Initial content to display in the editor (default: "")
     # @param options [Hash] Configuration options for the editor (default: {})
     # @return [String] Rendered HTML for the Markdown editor
@@ -22,7 +23,7 @@ module PonkotsuMdEditor
     #                                         placeholder: "This is Placeholder."
     #                                       }) %>
     def markdown_editor(form, content = "", options = {})
-      render "editor", content: content, form: form, options: options
+      render "ponkotsu_md_editor/editor", content: content, form: form, options: options
     end
   end
 end
