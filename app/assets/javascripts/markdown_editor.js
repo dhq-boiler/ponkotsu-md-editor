@@ -290,35 +290,12 @@
 
                 // Bold（**）の場合のみ、選択範囲の両端に余分な空白・改行・文末記号があれば除外
                 if (before === '**' && after === '**' && selectedText.length > 0) {
-                    let left = 0;
-                    let right = selectedText.length;
-                    // 先頭: 連続する「改行・空白・文末記号」をすべて除去
-                    const leadingPattern = /^[\s\n.,;:!?]+/;
-                    const matchLeading = selectedText.match(leadingPattern);
-                    if (matchLeading) {
-                        left += matchLeading[0].length;
-                        selectedText = selectedText.substring(matchLeading[0].length);
+                    // 両端の「改行・空白・文末記号」をすべて除去（複数連続も対応）
+                    while (/^[\s\n.,;:!?]+/.test(selectedText)) {
+                        selectedText = selectedText.replace(/^[\s\n.,;:!?]+/, '');
                     }
-                    // 末尾: 連続する「改行・空白・文末記号」をすべて除去
-                    const trailingPattern = /[\s\n.,;:!?]+$/;
-                    const matchTrailing = selectedText.match(trailingPattern);
-                    if (matchTrailing) {
-                        right -= matchTrailing[0].length;
-                        selectedText = selectedText.substring(0, selectedText.length - matchTrailing[0].length);
-                    }
-                    // 既存の両端trimも併用（ただしスペース・改行のみ）
-                    while (left < right && /[\s\n]/.test(selectedText[0])) {
-                        left++;
-                        selectedText = selectedText.substring(1);
-                    }
-                    while (right > left && /[\s\n]/.test(selectedText[selectedText.length-1])) {
-                        right--;
-                        selectedText = selectedText.substring(0, selectedText.length-1);
-                    }
-                    if (left !== 0 || right !== selectedText.length) {
-                        start += left;
-                        end -= (selectedText.length - right);
-                        // selectedTextはすでにtrim済み
+                    while (/[\s\n.,;:!?]+$/.test(selectedText)) {
+                        selectedText = selectedText.replace(/[\s\n.,;:!?]+$/, '');
                     }
                 }
 
