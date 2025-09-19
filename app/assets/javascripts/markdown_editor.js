@@ -287,6 +287,19 @@
                 if (before === '**' && after === '**' && selectedText.length > 0) {
                     let left = 0;
                     let right = selectedText.length;
+                    // 先頭が「\n 」ならスペース除去
+                    if (selectedText.startsWith('\n ')) {
+                        left += 2;
+                    } else if (selectedText[0] === ' ' && (start > 0 && fullText[start-1] === '\n')) {
+                        left += 1;
+                    }
+                    // 末尾が「 \n」ならスペース除去
+                    if (selectedText.endsWith(' \n')) {
+                        right -= 2;
+                    } else if (selectedText[selectedText.length-1] === ' ' && (end < fullText.length && fullText[end] === '\n')) {
+                        right -= 1;
+                    }
+                    // 既存の両端trimも併用（ただしスペース・改行のみ）
                     while (left < right && /[\s\n]/.test(selectedText[left])) left++;
                     while (right > left && /[\s\n]/.test(selectedText[right-1])) right--;
                     if (left !== 0 || right !== selectedText.length) {
