@@ -42,13 +42,13 @@
             try {
                 const start = textarea.selectionStart || 0;
                 const end = textarea.selectionEnd || 0;
-                const selectedText = textarea.value.substring(start, end);
+                const selectedText = textarea.innerText.substring(start, end);
 
-                const beforeText = textarea.value.substring(0, start);
-                const afterText = textarea.value.substring(end);
+                const beforeText = textarea.innerText.substring(0, start);
+                const afterText = textarea.innerText.substring(end);
                 const newText = before + selectedText + after;
 
-                textarea.value = beforeText + newText + afterText;
+                textarea.innerText = beforeText + newText + afterText;
 
                 // カーソル位置調整
                 const newCursorPos = selectedText.length > 0 ?
