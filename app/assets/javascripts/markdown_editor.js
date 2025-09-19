@@ -283,6 +283,11 @@
                     selectedText = textarea.value.substring(start, end);
                 }
 
+                // fullTextの定義をここで行う
+                const fullText = isContentEditable ?
+                    (textarea.innerText || textarea.textContent || '') :
+                    textarea.value;
+
                 // Bold（**）の場合のみ、選択範囲の両端に余分な空白・改行があれば除外
                 if (before === '**' && after === '**' && selectedText.length > 0) {
                     let left = 0;
@@ -308,10 +313,6 @@
                         selectedText = selectedText.substring(left, right);
                     }
                 }
-
-                const fullText = isContentEditable ?
-                    (textarea.innerText || textarea.textContent || '') :
-                    textarea.value;
 
                 const beforeText = fullText.substring(0, start);
                 const afterText = fullText.substring(end);
