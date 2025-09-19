@@ -119,6 +119,15 @@
                 selectedText = rangeText;
             }
 
+            // === 厳密化: selectedTextがfullText.slice(startPos, endPos)と一致しない場合、fullText内でselectedTextの位置を検索 ===
+            if (selectedText && fullText.slice(startPos, endPos) !== selectedText) {
+                const idx = fullText.indexOf(selectedText);
+                if (idx !== -1) {
+                    startPos = idx;
+                    endPos = idx + selectedText.length;
+                }
+            }
+
             // === デバッグ出力 ===
             console.log('[DEBUG] getContentEditableSelection');
             console.log('fullText:', JSON.stringify(fullText));
