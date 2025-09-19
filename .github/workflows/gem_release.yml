@@ -10,6 +10,9 @@ jobs:
   release:
     name: Release to RubyGems
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ponkotsu-md-editor
 
     permissions:
       contents: write
