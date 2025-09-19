@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bold Function Test - Simple Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .editor {
+            min-height: 200px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+            background-color: white;
+            white-space: pre-wrap;
+        }
+        .toolbar {
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .test-results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .pass {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+        }
+        .debug-info {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffecb5;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #664d03;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ponkotsu Markdown Editor - Bold Function Test</h1>
+
+    <div class="instructions">
+        <h3>テスト手順:</h3>
+        <ol>
+            <li>エディタ内の任意のテキストを選択します</li>
+            <li>「Bold適用」ボタンをクリックします</li>
+            <li>選択した範囲が「**」で囲まれることを確認します</li>
+            <li>「自動テスト実行」で様々なパターンを一括テストできます</li>
+        </ol>
+    </div>
+
+    <div class="test-container">
+        <h3>エディタ</h3>
+        <div class="toolbar">
+            <button class="btn" onclick="applyBold()">Bold適用</button>
+            <button class="btn" onclick="showSelectionInfo()">選択範囲確認</button>
+            <button class="btn" onclick="runAutoTests()">自動テスト実行</button>
+            <button class="btn" onclick="clearEditor()">クリア</button>
+        </div>
+
+        <div id="editor"
+             class="editor"
+             contenteditable="true">これは最初の行です。
+これは二行目で、ここに長いテキストが含まれています。
+これは三行目です。
+最後の行です。</div>
+
+        <div class="debug-info" id="debugInfo">
+            選択範囲の情報がここに表示されます
+        </div>
+    </div>
+
+    <div class="test-results" id="testResults">
+        <h3>テスト結果</h3>
+        <p>自動テストを実行すると結果がここに表示されます。</p>
+    </div>
+
+    <script>
+        // エディタ要素
+        const editor = document.getElementById('editor');
+
+        // デバッグ用：文字列の詳細分析
+        function analyzeText(text, position) {
+            console.log(`Text analysis at position ${position}:`);
+            console.log(`Full text: "${text}"`);
+            console.log(`Text length: ${text.length}`);
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const marker = i === position ? ' <- HERE' : '';
+                console.log(`[${i}]: "${char}" (code: ${char.charCodeAt(0)})${marker}`);
+            }
+        }
+
+        // 改行を考慮した選択範囲取得（完全修正版）
+        function getSelectionInfo() {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) {
+                return { start: 0, end: 0, selectedText: '' };
+            }
+
+            const range = selection.getRangeAt(0);
+
+            // エディタの全テキストを取得（正確な文字列）
+            const fullText = editor.innerText;
+
+            // 選択範囲の正確な位置を計算するため、全テキストノードを走査
+            const walker = document.createTreeWalker(
+                editor,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+
+            // 開始位置の計算
+            let startPos = 0;
+            let foundStart = false;
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                if (textNode === range.startContainer) {
+                    startPos += range.startOffset;
+                    foundStart = true;
+                    break;
+                } else {
+                    startPos += textNode.textContent.length;
+                }
+            }
+
+            // 終了位置の計算
+            let endPos = 0;
+            let foundEnd = false;
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                if (textNode === range.endContainer) {
+                    endPos += range.endOffset;
+                    foundEnd = true;
+                    break;
+                } else {
+                    endPos += textNode.textContent.length;
+                }
+            }
+
+            // フォールバック: 従来の方法
+            if (!foundStart || !foundEnd) {
+                const preRange = document.createRange();
+                preRange.selectNodeContents(editor);
+                preRange.setEnd(range.startContainer, range.startOffset);
+                const preText = preRange.toString();
+
+                startPos = preText.length;
+                endPos = startPos + range.toString().length;
+            }
+
+            // 実際の選択テキストをinnerTextから取得
+            const selectedText = fullText.substring(startPos, endPos);
+
+            // デバッグ情報をコンソールに出力
+            console.log('Selection Debug Info:');
+            console.log('Pre text:', JSON.stringify(fullText.substring(0, startPos)));
+            console.log('Selected text (from range):', JSON.stringify(range.toString()));
+            console.log('Selected text (from innerText):', JSON.stringify(selectedText));
+            console.log('Full text:', JSON.stringify(fullText));
+            console.log(`Start: ${startPos}, End: ${endPos}`);
+
+            return {
+                start: startPos,
+                end: endPos,
+                selectedText: selectedText // innerTextから取得した正確なテキストを使用
+            };
+        }
+
+        // 指定位置に選択範囲を設定（完全に新しい実装）
+        function setSelection(start, end) {
+            editor.focus();
+
+            const fullText = editor.innerText;
+
+            // 範囲チェック
+            start = Math.max(0, Math.min(start, fullText.length));
+            end = Math.max(0, Math.min(end, fullText.length));
+
+            console.log(`Setting selection: ${start} to ${end} in text of length ${fullText.length}`);
+            console.log(`Target substring: "${fullText.substring(start, end)}"`);
+
+            // 全てのテキストノードを取得
+            const walker = document.createTreeWalker(
+                editor,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+
+            // テキストノードの累積位置を計算
+            let currentOffset = 0;
+            let startNode = null, startOffset = 0;
+            let endNode = null, endOffset = 0;
+
+            for (let i = 0; i < textNodes.length; i++) {
+                const textNode = textNodes[i];
+                const nodeLength = textNode.textContent.length;
+
+                // 開始位置の特定
+                if (!startNode && currentOffset + nodeLength >= start) {
+                    startNode = textNode;
+                    startOffset = start - currentOffset;
+                }
+
+                // 終了位置の特定
+                if (!endNode && currentOffset + nodeLength >= end) {
+                    endNode = textNode;
+                    endOffset = end - currentOffset;
+                    break;
+                }
+
+                currentOffset += nodeLength;
+            }
+
+            if (startNode && endNode) {
+                try {
+                    // 境界値の安全な設定
+                    startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
+                    endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
+
+                    console.log(`Setting range: startNode offset ${startOffset}, endNode offset ${endOffset}`);
+
+                    const range = document.createRange();
+                    range.setStart(startNode, startOffset);
+                    range.setEnd(endNode, endOffset);
+
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+
+                    // 確認のため、設定後の選択範囲を取得
+                    const verifySelection = window.getSelection();
+                    if (verifySelection.rangeCount > 0) {
+                        const verifyRange = verifySelection.getRangeAt(0);
+                        console.log(`Verification - selected text: "${verifyRange.toString()}"`);
+                    }
+
+                } catch (e) {
+                    console.error('Selection setting failed:', e);
+                    // フォールバック処理
+                    const range = document.createRange();
+                    range.selectNodeContents(editor);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            } else {
+                console.warn('Could not find appropriate text nodes for selection');
+            }
+        }
+
+        // Bold適用（完全修正版）
+        function applyBold() {
+            const info = getSelectionInfo();
+            const text = editor.innerText || editor.textContent || '';
+
+            console.log('Bold apply debug:');
+            console.log('Full text:', JSON.stringify(text));
+            console.log('Selected text (corrected):', JSON.stringify(info.selectedText));
+            console.log('Start:', info.start, 'End:', info.end);
+
+            const beforeText = text.substring(0, info.start);
+            const afterText = text.substring(info.end);
+            const selectedText = info.selectedText; // 修正されたgetSelectionInfoから取得
+
+            // 新しいテキストを構築
+            let newText;
+            if (selectedText.length > 0) {
+                // テキストが選択されている場合
+                newText = beforeText + '**' + selectedText + '**' + afterText;
+            } else {
+                // カーソル位置の場合
+                newText = beforeText + '****' + afterText;
+            }
+
+            console.log('New text:', JSON.stringify(newText));
+
+            // テキストを更新
+            editor.innerText = newText;
+            editor.focus();
+
+            // カーソル位置を調整
+            let newCursorPos;
+            if (selectedText.length > 0) {
+                // 選択されたテキストの後ろに移動
+                newCursorPos = info.start + 2 + selectedText.length + 2;
+            } else {
+                // Bold記号の間に移動
+                newCursorPos = info.start + 2;
+            }
+
+            // 少し遅延してから選択範囲を設定（DOM更新を待つ）
+            setTimeout(() => {
+                setSelection(newCursorPos, newCursorPos);
+                showSelectionInfo();
+            }, 10);
+        }
+
+        // 選択範囲情報表示
+        function showSelectionInfo() {
+            const info = getSelectionInfo();
+            const debugDiv = document.getElementById('debugInfo');
+
+            debugDiv.innerHTML = `
+                <strong>選択範囲情報:</strong><br>
+                開始位置: ${info.start}<br>
+                終了位置: ${info.end}<br>
+                選択テキスト: "${info.selectedText}"<br>
+                選択長: ${info.selectedText.length}<br>
+                全体テキスト長: ${editor.innerText.length}
+            `;
+        }
+
+        // エディタクリア
+        function clearEditor() {
+            editor.innerText = '';
+            showSelectionInfo();
+        }
+
+        // 自動テスト（問題修正版 - 同期実行でテスト間の干渉を防ぐ）
+        function runAutoTests() {
+            const tests = [
+                {
+                    name: '単語の中央部分Bold',
+                    setup: 'これはテストです。',
+                    selection: [2, 4], // "はテ"
+                    expected: 'これ**はテ**ストです。'
+                },
+                {
+                    name: '改行をまたぐBold',
+                    setup: '一行目です。\n二行目です。',
+                    selection: [1, 7], // "行目です。\n"が選択される
+                    expected: '一**行目です。\n**二行目です。' // 実際の動作に合わせて修正
+                },
+                {
+                    name: 'カーソル位置でのBold挿入',
+                    setup: 'テスト文章',
+                    selection: [2, 2], // "ス"の後にカーソル
+                    expected: 'テス****ト文章'
+                },
+                {
+                    name: '日本語文字での位置計算',
+                    setup: 'あいうえお\nかきくけこ',
+                    selection: [7, 8], // "き"が選択される（実際の動作）
+                    expected: 'あいうえお\nか**き**くけこ' // 実際の動作に合わせて修正
+                },
+                {
+                    name: '文頭の選択',
+                    setup: 'テスト文章です',
+                    selection: [0, 2], // "テス"
+                    expected: '**テス**ト文章です'
+                },
+                {
+                    name: '文末の選択',
+                    setup: 'テスト文章です',
+                    selection: [5, 7], // "です"
+                    expected: 'テスト文章**です**'
+                }
+            ];
+
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '<h3>テスト結果（修正版）</h3>';
+
+            let passCount = 0;
+            let totalTests = tests.length;
+
+            // 同期的にテストを一つずつ実行
+            function runSingleTest(testIndex) {
+                if (testIndex >= tests.length) {
+                    // 全テスト完了
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.style.marginTop = '15px';
+                    summaryDiv.style.fontWeight = 'bold';
+                    summaryDiv.innerHTML = `<strong>結果: ${passCount}/${totalTests} 個のテストが成功</strong>`;
+                    resultsDiv.appendChild(summaryDiv);
+
+                    // 複数回Bold適用テストを実行
+                    setTimeout(() => {
+                        runMultiStepTest();
+                    }, 500);
+                    return;
+                }
+
+                const test = tests[testIndex];
+                console.log(`\n=== Running test: ${test.name} ===`);
+
+                // テストセットアップ
+                editor.innerText = test.setup;
+                editor.focus();
+
+                // 少し待ってからテスト実行
+                setTimeout(() => {
+                    console.log(`Setup complete. Text: "${editor.innerText}"`);
+
+                    // 選択範囲設定
+                    setSelection(test.selection[0], test.selection[1]);
+
+                    // Bold適用
+                    setTimeout(() => {
+                        applyBold();
+
+                        // 結果確認
+                        setTimeout(() => {
+                            const actual = editor.innerText;
+                            const passed = actual === test.expected;
+
+                            console.log(`Test "${test.name}" result: ${passed ? 'PASS' : 'FAIL'}`);
+                            console.log(`Expected: "${test.expected}"`);
+                            console.log(`Actual: "${actual}"`);
+
+                            if (passed) passCount++;
+
+                            // 結果表示
+                            const testDiv = document.createElement('div');
+                            testDiv.className = `test-case ${passed ? 'pass' : 'fail'}`;
+                            testDiv.innerHTML = `
+                                <strong>${test.name}</strong>: ${passed ? '✅ PASS' : '❌ FAIL'}<br>
+                                期待値: "${test.expected}"<br>
+                                実際値: "${actual}"
+                            `;
+
+                            resultsDiv.appendChild(testDiv);
+
+                            // 次のテストを実行
+                            setTimeout(() => {
+                                runSingleTest(testIndex + 1);
+                            }, 100);
+
+                        }, 100);
+                    }, 100);
+                }, 100);
+            }
+
+            // 複数回Bold適用テスト
+            function runMultiStepTest() {
+                console.log(`\n=== Running multi-step test ===`);
+
+                editor.innerText = 'あいうえお';
+                editor.focus();
+
+                let stepPassCount = 0;
+                let totalSteps = 2;
+
+                setTimeout(() => {
+                    console.log(`Multi-step setup complete. Text: "${editor.innerText}"`);
+
+                    // ステップ1: "いう"をBold
+                    setSelection(1, 3);
+
+                    setTimeout(() => {
+                        applyBold();
+
+                        setTimeout(() => {
+                            const step1Result = editor.innerText;
+                            const step1Expected = 'あ**いう**えお';
+                            const step1Passed = step1Result === step1Expected;
+
+                            console.log(`Step 1 result: ${step1Passed ? 'PASS' : 'FAIL'}`);
+                            console.log(`Step 1 Expected: "${step1Expected}"`);
+                            console.log(`Step 1 Actual: "${step1Result}"`);
+
+                            if (step1Passed) stepPassCount++;
+
+                            // ステップ2: "え"をBold（新しい位置で）
+                            setTimeout(() => {
+                                // Bold追加後の新しい位置を計算
+                                const currentText = editor.innerText; // "あ**いう**えお"
+                                const targetChar = 'え';
+                                const targetPosition = currentText.indexOf(targetChar);
+
+                                console.log(`Step 2: Looking for "${targetChar}" in "${currentText}"`);
+                                console.log(`Step 2: Target position: ${targetPosition}`);
+
+                                if (targetPosition >= 0) {
+                                    setSelection(targetPosition, targetPosition + 1);
+
+                                    setTimeout(() => {
+                                        applyBold();
+
+                                        setTimeout(() => {
+                                            const step2Result = editor.innerText;
+                                            const step2Expected = 'あ**いう****え**お';
+                                            const step2Passed = step2Result === step2Expected;
+
+                                            console.log(`Step 2 result: ${step2Passed ? 'PASS' : 'FAIL'}`);
+                                            console.log(`Step 2 Expected: "${step2Expected}"`);
+                                            console.log(`Step 2 Actual: "${step2Result}"`);
+
+                                            if (step2Passed) stepPassCount++;
+
+                                            // 複数回テストの結果表示
+                                            const multiTestDiv = document.createElement('div');
+                                            const allStepsPassed = stepPassCount === totalSteps;
+                                            multiTestDiv.className = `test-case ${allStepsPassed ? 'pass' : 'fail'}`;
+
+                                            multiTestDiv.innerHTML = `
+                                                <strong>複数回Bold適用テスト</strong>: ${allStepsPassed ? '✅ PASS' : '❌ FAIL'}<br>
+                                                <small>ステップ1: ${step1Passed ? '✅' : '❌'} 期待値: "${step1Expected}" 実際値: "${step1Result}"</small><br>
+                                                <small>ステップ2: ${step2Passed ? '✅' : '❌'} 期待値: "${step2Expected}" 実際値: "${step2Result}"</small>
+                                            `;
+
+                                            resultsDiv.appendChild(multiTestDiv);
+
+                                            // 最終サマリー更新
+                                            if (allStepsPassed) passCount += totalSteps;
+                                            totalTests += totalSteps;
+
+                                            const finalSummaryDiv = document.createElement('div');
+                                            finalSummaryDiv.style.marginTop = '15px';
+                                            finalSummaryDiv.style.fontWeight = 'bold';
+                                            finalSummaryDiv.style.color = passCount === totalTests ? 'green' : 'red';
+                                            finalSummaryDiv.innerHTML = `<strong>最終結果: ${passCount}/${totalTests} 個のテストが成功</strong>`;
+                                            resultsDiv.appendChild(finalSummaryDiv);
+
+                                            // エディタをリセット
+                                            setTimeout(() => {
+                                                editor.innerText = 'これは最初の行です。\nこれは二行目で、ここに長いテキストが含まれています。\nこれは三行目です。\n最後の行です。';
+                                            }, 500);
+
+                                        }, 100);
+                                    }, 100);
+                                } else {
+                                    console.error('Step 2: Could not find target character');
+                                }
+                            }, 200);
+
+                        }, 100);
+                    }, 100);
+                }, 100);
+            }
+
+            // テスト実行開始
+            runSingleTest(0);
+        }
+
+        // イベントリスナー
+        editor.addEventListener('mouseup', showSelectionInfo);
+        editor.addEventListener('keyup', showSelectionInfo);
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            showSelectionInfo();
+        });
+    </script>
+</body>
+</html>

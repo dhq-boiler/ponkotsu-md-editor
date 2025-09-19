@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponkotsu Markdown Editor - Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="app/assets/stylesheets/markdown_editor.css" rel="stylesheet">
+    <style>
+        .test-results {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .test-case {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .test-pass {
+            background-color: #d1e7dd;
+            border: 1px solid #badbcc;
+            color: #0f5132;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+            color: #842029;
+        }
+        .editor-test {
+            min-height: 200px;
+            border: 2px solid #007bff;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+            background-color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-4">
+        <h1 class="mb-4">Ponkotsu Markdown Editor - Bold Function Test</h1>
+
+        <!-- Test Results Display -->
+        <div class="test-results">
+            <h3>テスト結果</h3>
+            <div id="testResults"></div>
+            <button id="runTests" class="btn btn-primary mt-3">全テストを実行</button>
+        </div>
+
+        <!-- Editor Section -->
+        <div class="row">
+            <div class="col-md-6">
+                <h3>エディタ</h3>
+                <div class="mb-3">
+                    <div class="btn-toolbar mb-2" role="toolbar">
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('**', '**')" title="Bold (Ctrl+B)">
+                                <i class="bi bi-type-bold"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('*', '*')" title="Italic (Ctrl+I)">
+                                <i class="bi bi-type-italic"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="insertCode()" title="Code">
+                                <i class="bi bi-code"></i>
+                            </button>
+                        </div>
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearEditor()" title="Clear">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePreview()" title="Preview">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- contenteditable div as textarea -->
+                    <div id="editor_content"
+                         class="editor-test"
+                         contenteditable="true"
+                         placeholder="ここにテキストを入力してください...">これは最初の行です。
+これは二行目です。
+これは三行目で、ここに長いテキストが含まれています。
+四行目です。</div>
+                </div>
+
+                <!-- Manual Test Controls -->
+                <div class="mb-3">
+                    <h5>手動テスト用コントロール</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="testManualBold()">
+                            選択範囲をBold
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showSelectionInfo()">
+                            選択範囲情報表示
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="testSpecificPosition()">
+                            特定位置テスト
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <h3>プレビュー</h3>
+                <div id="markdownPreview" class="border p-3" style="min-height: 300px; background-color: white; display: none;">
+                </div>
+
+                <!-- Debug Information -->
+                <div class="mt-3">
+                    <h5>デバッグ情報</h5>
+                    <div id="debugInfo" class="border p-2" style="font-size: 12px; font-family: monospace; background-color: #f8f9fa;">
+                        選択範囲の情報がここに表示されます
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app/assets/javascripts/markdown_editor.js"></script>
+
+    <script>
+        // Test framework
+        class EditorTester {
+            constructor() {
+                this.testResults = [];
+                this.editor = document.getElementById('editor_content');
+            }
+
+            // テキストを設定
+            setText(text) {
+                this.editor.innerText = text;
+                this.editor.focus();
+            }
+
+            // 指定した位置に選択範囲を設定
+            setSelection(start, end) {
+                this.editor.focus();
+
+                // contenteditable要素の選択範囲設定
+                const walker = document.createTreeWalker(
+                    this.editor,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                let currentOffset = 0;
+                let startNode = null, startOffset = 0;
+                let endNode = null, endOffset = 0;
+
+                let node;
+                while (node = walker.nextNode()) {
+                    const nodeLength = node.textContent.length;
+
+                    if (startNode === null && currentOffset + nodeLength >= start) {
+                        startNode = node;
+                        startOffset = start - currentOffset;
+                    }
+
+                    if (endNode === null && currentOffset + nodeLength >= end) {
+                        endNode = node;
+                        endOffset = end - currentOffset;
+                        break;
+                    }
+
+                    currentOffset += nodeLength;
+                }
+
+                if (startNode && endNode) {
+                    const range = document.createRange();
+                    range.setStart(startNode, startOffset);
+                    range.setEnd(endNode, endOffset);
+
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+
+            // 現在のテキストを取得
+            getText() {
+                return this.editor.innerText || this.editor.textContent || '';
+            }
+
+            // 選択範囲情報を取得
+            getSelectionInfo() {
+                if (typeof getContentEditableSelection === 'function') {
+                    return getContentEditableSelection(this.editor);
+                } else {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount === 0) {
+                        return { start: 0, end: 0, selectedText: '' };
+                    }
+                    const range = selection.getRangeAt(0);
+                    return {
+                        start: 0,
+                        end: 0,
+                        selectedText: range.toString()
+                    };
+                }
+            }
+
+            // テストケースを実行
+            runTest(testName, testFunction) {
+                try {
+                    const result = testFunction();
+                    this.testResults.push({
+                        name: testName,
+                        passed: result.passed,
+                        message: result.message,
+                        expected: result.expected,
+                        actual: result.actual
+                    });
+                } catch (error) {
+                    this.testResults.push({
+                        name: testName,
+                        passed: false,
+                        message: `エラー: ${error.message}`,
+                        expected: 'エラーなし',
+                        actual: error.toString()
+                    });
+                }
+            }
+
+            // テスト結果を表示
+            displayResults() {
+                const resultsDiv = document.getElementById('testResults');
+                resultsDiv.innerHTML = '';
+
+                this.testResults.forEach(result => {
+                    const testDiv = document.createElement('div');
+                    testDiv.className = `test-case ${result.passed ? 'test-pass' : 'test-fail'}`;
+
+                    testDiv.innerHTML = `
+                        <strong>${result.name}</strong>: ${result.passed ? '✅ PASS' : '❌ FAIL'}
+                        <br><small>${result.message}</small>
+                        ${result.expected ? `<br><small>期待値: ${result.expected}</small>` : ''}
+                        ${result.actual ? `<br><small>実際値: ${result.actual}</small>` : ''}
+                    `;
+
+                    resultsDiv.appendChild(testDiv);
+                });
+
+                const passedCount = this.testResults.filter(r => r.passed).length;
+                const totalCount = this.testResults.length;
+
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'mt-3 fw-bold';
+                summaryDiv.textContent = `結果: ${passedCount}/${totalCount} 個のテストが成功`;
+                resultsDiv.appendChild(summaryDiv);
+            }
+
+            // すべてのテストをクリア
+            clearResults() {
+                this.testResults = [];
+            }
+        }
+
+        // グローバルテスターインスタンス
+        const tester = new EditorTester();
+
+        // 具体的なテストケース
+        function runAllTests() {
+            tester.clearResults();
+
+            // テスト1: 単語の中央部分をBold
+            tester.runTest('単語中央部分のBold', () => {
+                const testText = 'これはテストです。';
+                tester.setText(testText);
+                tester.setSelection(2, 6); // "はテス" を選択
+
+                insertMarkdown('**', '**');
+
+                const result = tester.getText();
+                const expected = 'これ**はテス**トです。';
+
+                return {
+                    passed: result === expected,
+                    message: `単語の中央部分を正しくBoldできるか`,
+                    expected: expected,
+                    actual: result
+                };
+            });
+
+            // テスト2: 行をまたぐ選択のBold
+            tester.runTest('改行をまたぐBold', () => {
+                const testText = '一行目です。\n二行目です。';
+                tester.setText(testText);
+                tester.setSelection(3, 8); // "目です。\n二" を選択
+
+                insertMarkdown('**', '**');
+
+                const result = tester.getText();
+                const expected = '一行**目です。\n二**行目です。';
+
+                return {
+                    passed: result === expected,
+                    message: `改行をまたぐ選択を正しくBoldできるか`,
+                    expected: expected,
+                    actual: result
+                };
+            });
+
+            // テスト3: 空の選択でのBold（カーソル位置に挿入）
+            tester.runTest('カーソル位置でのBold挿入', () => {
+                const testText = 'テスト文章';
+                tester.setText(testText);
+                tester.setSelection(3, 3); // "ト" の後にカーソル
+
+                insertMarkdown('**', '**');
+
+                const result = tester.getText();
+                const expected = 'テス****ト文章';
+
+                return {
+                    passed: result === expected,
+                    message: `カーソル位置に正しくBoldタグを挿入できるか`,
+                    expected: expected,
+                    actual: result
+                };
+            });
+
+            // テスト4: 複数行テキストの最後の行の一部をBold
+            tester.runTest('最終行の部分Bold', () => {
+                const testText = '一行目\n二行目\n三行目です';
+                tester.setText(testText);
+                tester.setSelection(11, 13); // "三行" を選択
+
+                insertMarkdown('**', '**');
+
+                const result = tester.getText();
+                const expected = '一行目\n二行目\n**三行**目です';
+
+                return {
+                    passed: result === expected,
+                    message: `最終行の一部を正しくBoldできるか`,
+                    expected: expected,
+                    actual: result
+                };
+            });
+
+            // テスト5: 日本語文字での正確な位置計算
+            tester.runTest('日本語文字での位置計算', () => {
+                const testText = 'あいうえお\nかきくけこ\nさしすせそ';
+                tester.setText(testText);
+                tester.setSelection(7, 10); // "きく" を選択
+
+                insertMarkdown('**', '**');
+
+                const result = tester.getText();
+                const expected = 'あいうえお\nか**きく**けこ\nさしすせそ';
+
+                return {
+                    passed: result === expected,
+                    message: `日本語文字で正確な位置計算ができるか`,
+                    expected: expected,
+                    actual: result
+                };
+            });
+
+            tester.displayResults();
+        }
+
+        // 手動テスト関数
+        function testManualBold() {
+            insertMarkdown('**', '**');
+            showSelectionInfo();
+        }
+
+        function showSelectionInfo() {
+            const info = tester.getSelectionInfo();
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = `
+                <strong>選択範囲情報:</strong><br>
+                開始位置: ${info.start}<br>
+                終了位置: ${info.end}<br>
+                選択テキスト: "${info.selectedText}"<br>
+                選択長: ${info.selectedText.length}<br>
+                現在のテキスト長: ${tester.getText().length}
+            `;
+        }
+
+        function testSpecificPosition() {
+            // 特定の位置をテスト
+            const text = tester.getText();
+            if (text.length > 5) {
+                tester.setSelection(2, 5);
+                showSelectionInfo();
+            } else {
+                alert('テキストが短すぎます。もう少し長いテキストを入力してください。');
+            }
+        }
+
+        function clearEditor() {
+            tester.setText('');
+            document.getElementById('debugInfo').innerHTML = 'エディタがクリアされました';
+        }
+
+        // イベントリスナー
+        document.getElementById('runTests').addEventListener('click', runAllTests);
+
+        // エディタの変更を監視
+        document.getElementById('editor_content').addEventListener('input', function() {
+            showSelectionInfo();
+        });
+
+        document.getElementById('editor_content').addEventListener('selectionchange', function() {
+            setTimeout(showSelectionInfo, 10);
+        });
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page loaded');
+            showSelectionInfo();
+        });
+    </script>
+</body>
+</html>
+
