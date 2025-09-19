@@ -30,7 +30,7 @@
 
         let isPreviewMode = false;
 
-        // Selection range utilities for contenteditable elements
+        // Selection range utilities for contenteditable elements (precision enhanced version)
         function getContentEditableSelection(element) {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) {
@@ -54,46 +54,63 @@
                 textNodes.push(node);
             }
 
-            // Calculate start position
+            // innerText-based position calculation (most accurate)
             let startPos = 0;
-            let foundStart = false;
-            for (let i = 0; i < textNodes.length; i++) {
-                const textNode = textNodes[i];
-                if (textNode === range.startContainer) {
-                    startPos += range.startOffset;
-                    foundStart = true;
-                    break;
-                } else {
-                    startPos += textNode.textContent.length;
-                }
-            }
-
-            // Calculate end position
             let endPos = 0;
+            let foundStart = false;
             let foundEnd = false;
+
+            // Process all text nodes sequentially
+            let cumulativeLength = 0;
+
             for (let i = 0; i < textNodes.length; i++) {
                 const textNode = textNodes[i];
-                if (textNode === range.endContainer) {
-                    endPos += range.endOffset;
+                const nodeText = textNode.textContent;
+                const nodeLength = nodeText.length;
+
+                // Identify start position
+                if (!foundStart && textNode === range.startContainer) {
+                    startPos = cumulativeLength + range.startOffset;
+                    foundStart = true;
+                }
+
+                // Identify end position
+                if (!foundEnd && textNode === range.endContainer) {
+                    endPos = cumulativeLength + range.endOffset;
                     foundEnd = true;
                     break;
-                } else {
-                    endPos += textNode.textContent.length;
                 }
+
+                cumulativeLength += nodeLength;
             }
 
-            // Fallback handling
+            // Fallback: Handle DOM structure and innerText inconsistencies
             if (!foundStart || !foundEnd) {
+                console.warn('Using fallback position calculation');
+
+                // Get text before selection range
                 const preRange = document.createRange();
                 preRange.selectNodeContents(element);
                 preRange.setEnd(range.startContainer, range.startOffset);
                 const preText = preRange.toString();
 
-                startPos = preText.length;
-                endPos = startPos + range.toString().length;
+                // Get selected range text
+                const selectedRangeText = range.toString();
+
+                // Calculate accurate position by matching with innerText
+                startPos = fullText.indexOf(preText) >= 0 ?
+                    preText.length :
+                    fullText.indexOf(selectedRangeText);
+
+                if (startPos < 0) startPos = 0;
+                endPos = startPos + selectedRangeText.length;
             }
 
-            // Get accurate selected text from innerText
+            // Boundary checks
+            startPos = Math.max(0, Math.min(startPos, fullText.length));
+            endPos = Math.max(startPos, Math.min(endPos, fullText.length));
+
+            // Get actual selected text from innerText
             const selectedText = fullText.substring(startPos, endPos);
 
             return {
@@ -103,7 +120,7 @@
             };
         }
 
-        // Set selection range at specified position
+        // Set selection range at specified position (precision enhanced version)
         function setContentEditableSelection(element, start, end) {
             element.focus();
 
@@ -111,7 +128,7 @@
 
             // Range validation
             start = Math.max(0, Math.min(start, fullText.length));
-            end = Math.max(0, Math.min(end, fullText.length));
+            end = Math.max(start, Math.min(end, fullText.length));
 
             // Get text nodes
             const walker = document.createTreeWalker(
@@ -127,16 +144,12 @@
                 textNodes.push(node);
             }
 
-            // テキストノードが見つからない場合のフォールバック
+            // Fallback for missing text nodes
             if (textNodes.length === 0) {
-                console.warn('No text nodes found, creating fallback text node');
-                // エディタに最低限のテキストノードを作成
-                if (fullText.length === 0) {
-                    element.textContent = ' ';
-                } else {
-                    element.textContent = fullText;
-                }
-                // 再度テキストノードを取得
+                console.warn('No text nodes found, recreating content');
+                element.textContent = fullText;
+
+                // Get text nodes again
                 const newWalker = document.createTreeWalker(
                     element,
                     NodeFilter.SHOW_TEXT,
@@ -148,8 +161,8 @@
                 }
             }
 
-            // Calculate node and offset from cumulative position
-            let currentOffset = 0;
+            // Calculate cumulative positions of text nodes
+            let cumulativeOffset = 0;
             let startNode = null, startOffset = 0;
             let endNode = null, endOffset = 0;
 
@@ -158,64 +171,35 @@
                 const nodeLength = textNode.textContent.length;
 
                 // Find start position
-                if (!startNode && currentOffset + nodeLength >= start) {
+                if (!startNode && cumulativeOffset + nodeLength >= start) {
                     startNode = textNode;
-                    startOffset = start - currentOffset;
+                    startOffset = start - cumulativeOffset;
                 }
 
                 // Find end position
-                if (!endNode && currentOffset + nodeLength >= end) {
+                if (!endNode && cumulativeOffset + nodeLength >= end) {
                     endNode = textNode;
-                    endOffset = end - currentOffset;
+                    endOffset = end - cumulativeOffset;
                     break;
                 }
 
-                currentOffset += nodeLength;
+                cumulativeOffset += nodeLength;
             }
 
-            // 適切なノードが見つからない場合の改良されたフォールバック
-            if (!startNode || !endNode) {
-                console.warn('Could not find appropriate text nodes, using improved fallback');
+            // Enhanced fallback processing
+            if (!startNode && textNodes.length > 0) {
+                startNode = textNodes[textNodes.length - 1];
+                startOffset = Math.min(start, startNode.textContent.length);
+            }
 
-                // 最後のテキストノードを使用
-                if (textNodes.length > 0) {
-                    const lastNode = textNodes[textNodes.length - 1];
-                    const firstNode = textNodes[0];
-
-                    if (!startNode) {
-                        if (start <= firstNode.textContent.length) {
-                            startNode = firstNode;
-                            startOffset = Math.min(start, firstNode.textContent.length);
-                        } else {
-                            startNode = lastNode;
-                            startOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
-                        }
-                    }
-
-                    if (!endNode) {
-                        if (end <= firstNode.textContent.length) {
-                            endNode = firstNode;
-                            endOffset = Math.min(end, firstNode.textContent.length);
-                        } else {
-                            endNode = lastNode;
-                            endOffset = Math.min(lastNode.textContent.length, lastNode.textContent.length);
-                        }
-                    }
-                } else {
-                    // 完全なフォールバック: エディタの最後にカーソルを設定
-                    const range = document.createRange();
-                    range.selectNodeContents(element);
-                    range.collapse(false);
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    return;
-                }
+            if (!endNode && textNodes.length > 0) {
+                endNode = textNodes[textNodes.length - 1];
+                endOffset = Math.min(end, endNode.textContent.length);
             }
 
             if (startNode && endNode) {
                 try {
-                    // Adjust boundary values
+                    // Safe boundary setting
                     startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
                     endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
 
@@ -229,7 +213,7 @@
 
                 } catch (e) {
                     console.error('Selection setting failed:', e);
-                    // Fallback: set cursor at end of element
+                    // Final fallback
                     try {
                         const range = document.createRange();
                         range.selectNodeContents(element);
@@ -238,11 +222,11 @@
                         selection.removeAllRanges();
                         selection.addRange(range);
                     } catch (fallbackError) {
-                        console.error('Fallback selection also failed:', fallbackError);
+                        console.error('Fallback selection failed:', fallbackError);
                     }
                 }
             } else {
-                console.warn('Could not find appropriate text nodes for selection');
+                console.warn('Could not establish selection nodes');
             }
         }
 
