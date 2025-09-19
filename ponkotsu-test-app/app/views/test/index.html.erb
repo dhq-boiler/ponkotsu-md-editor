@@ -16,15 +16,11 @@
     <div class="card-body">
       <h3 class="card-title">エディタテスト</h3>
 
-      <!-- 実際のgemを使用したエディタ -->
-      <%= render "ponkotsu_md_editor/editor",
-          form: form,
-          content: @content,
-          options: {
-            lang: :ja,
-            preview: true,
-            tools: %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule]
-          } %>
+      <%= markdown_editor(form: form, content: @content, options: {
+        lang: :ja,
+        preview: true,
+        tools: %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule]
+      }) %>
 
       <div class="mt-3">
         <button type="submit" class="btn btn-primary">
