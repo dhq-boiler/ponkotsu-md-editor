@@ -74,7 +74,7 @@
                     foundStart = true;
                 }
 
-                // Identify end position
+                // Identify end position (exclusive)
                 if (!foundEnd && textNode === range.endContainer) {
                     endPos = cumulativeLength + range.endOffset;
                     foundEnd = true;
@@ -116,7 +116,7 @@
             return {
                 start: startPos,
                 end: endPos,
-                selectedText: selectedText
+                selectedText: fullText.substring(startPos, endPos)
             };
         }
 
