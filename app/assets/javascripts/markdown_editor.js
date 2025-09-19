@@ -1459,8 +1459,9 @@
     };
 
     // 3. テキスト上書き
-    window.testReplaceTextAtRange = function(fullText, start, end, decoratedText) {
-        return fullText.substring(0, start) + decoratedText + fullText.substring(end);
+    window.testReplaceTextAtRange = function(fullText, start, end, decoratedText, selectedText) {
+        // 選択範囲のstartからendまでをdecoratedTextで置換
+        return fullText.slice(0, start) + decoratedText + fullText.slice(end);
     };
 
 })();
