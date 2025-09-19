@@ -15,5 +15,13 @@ module PonkotsuMdEditor
         include PonkotsuMdEditor::Helpers
       end
     end
+
+    # Configure asset paths for the engine
+    # This ensures that JavaScript and CSS files are properly loaded
+    initializer "ponkotsu_md_editor.assets" do |app|
+      if app.config.respond_to?(:assets)
+        app.config.assets.precompile += %w[markdown_editor.js markdown_editor.css]
+      end
+    end
   end
 end
