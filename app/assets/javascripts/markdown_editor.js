@@ -24,7 +24,7 @@
         console.log('Enhanced Markdown editor initializing...');
 
         // DOM要素の取得
-        const textarea = getElement('.markdown-textarea');
+        const textarea = document.getElementById('editor_content');
         const previewContainer = getElement('#markdownPreview');
         const previewToggle = getElement('#previewToggle');
 
