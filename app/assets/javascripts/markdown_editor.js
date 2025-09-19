@@ -1438,4 +1438,28 @@
         }
     });
 
+    // === テスト用関数群 ===
+    // 1. 選択範囲検出
+    window.testGetSelection = function(element) {
+        return getContentEditableSelection(element);
+    };
+
+    // 2. Boldデコレーション（両端trim含む）
+    window.testDecorateBold = function(text) {
+        // 両端の「改行・空白・文末記号」をすべて除去（複数連続も対応）
+        let trimmed = text;
+        while (/^[\s\n.,;:!?]+/.test(trimmed)) {
+            trimmed = trimmed.replace(/^[\s\n.,;:!?]+/, '');
+        }
+        while (/[\s\n.,;:!?]+$/.test(trimmed)) {
+            trimmed = trimmed.replace(/[\s\n.,;:!?]+$/, '');
+        }
+        return `**${trimmed}**`;
+    };
+
+    // 3. テキスト上書き
+    window.testReplaceTextAtRange = function(fullText, start, end, decoratedText) {
+        return fullText.substring(0, start) + decoratedText + fullText.substring(end);
+    };
+
 })();
