@@ -1,3 +1,7 @@
+ponkotsu-test-app/tmp/*
+ponkotsu-test-app/config/master.keys
+ponkotsu-test-app/db/*.sqlite3
+ponkotsu-test-app/db/*.sqlite3-journal
 /.bundle/
 /.yardoc
 /_yardoc/
