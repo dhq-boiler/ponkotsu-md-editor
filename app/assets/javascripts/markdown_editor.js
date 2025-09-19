@@ -131,6 +131,8 @@
                 selectedText: fullText.substring(startPos, endPos)
             };
         }
+        // 外部公開
+        window.getContentEditableSelection = getContentEditableSelection;
 
         // Set selection range at specified position (precision enhanced version)
         function setContentEditableSelection(element, start, end) {
