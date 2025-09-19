@@ -30,6 +30,81 @@
 
         let isPreviewMode = false;
 
+        // contenteditable要素用の選択範囲取得・設定機能
+        function getContentEditableSelection(element) {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) {
+                return { start: 0, end: 0, selectedText: '' };
+            }
+
+            const range = selection.getRangeAt(0);
+
+            // 要素内のテキスト全体を取得
+            const fullText = element.innerText || element.textContent || '';
+
+            // 選択範囲の開始位置を計算
+            const preRange = document.createRange();
+            preRange.selectNodeContents(element);
+            preRange.setEnd(range.startContainer, range.startOffset);
+            const start = (preRange.toString()).length;
+
+            // 選択範囲の終了位置を計算
+            const selectedText = range.toString();
+            const end = start + selectedText.length;
+
+            return {
+                start: start,
+                end: end,
+                selectedText: selectedText
+            };
+        }
+
+        function setContentEditableSelection(element, start, end) {
+            const textNodes = [];
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+
+            let currentOffset = 0;
+            let startNode = null, startOffset = 0;
+            let endNode = null, endOffset = 0;
+
+            for (const textNode of textNodes) {
+                const nodeLength = textNode.textContent.length;
+
+                if (startNode === null && currentOffset + nodeLength >= start) {
+                    startNode = textNode;
+                    startOffset = start - currentOffset;
+                }
+
+                if (endNode === null && currentOffset + nodeLength >= end) {
+                    endNode = textNode;
+                    endOffset = end - currentOffset;
+                    break;
+                }
+
+                currentOffset += nodeLength;
+            }
+
+            if (startNode && endNode) {
+                const range = document.createRange();
+                range.setStart(startNode, startOffset);
+                range.setEnd(endNode, endOffset);
+
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+
         // Markdownテキスト挿入機能
         window.insertMarkdown = function(before, after) {
             after = after || '';
@@ -40,15 +115,40 @@
             }
 
             try {
-                const start = textarea.selectionStart || 0;
-                const end = textarea.selectionEnd || 0;
-                const selectedText = textarea.innerText.substring(start, end);
+                // contenteditable要素かどうかを判定
+                const isContentEditable = textarea.contentEditable === 'true' ||
+                                        textarea.getAttribute('contenteditable') === 'true';
 
-                const beforeText = textarea.innerText.substring(0, start);
-                const afterText = textarea.innerText.substring(end);
+                let start, end, selectedText;
+
+                if (isContentEditable) {
+                    // contenteditable要素の場合
+                    const selection = getContentEditableSelection(textarea);
+                    start = selection.start;
+                    end = selection.end;
+                    selectedText = selection.selectedText;
+                } else {
+                    // 通常のtextarea要素の場合
+                    start = textarea.selectionStart || 0;
+                    end = textarea.selectionEnd || 0;
+                    selectedText = textarea.value.substring(start, end);
+                }
+
+                const fullText = isContentEditable ?
+                    (textarea.innerText || textarea.textContent || '') :
+                    textarea.value;
+
+                const beforeText = fullText.substring(0, start);
+                const afterText = fullText.substring(end);
                 const newText = before + selectedText + after;
 
-                textarea.innerText = beforeText + newText + afterText;
+                const newFullText = beforeText + newText + afterText;
+
+                if (isContentEditable) {
+                    textarea.innerText = newFullText;
+                } else {
+                    textarea.value = newFullText;
+                }
 
                 // カーソル位置調整
                 const newCursorPos = selectedText.length > 0 ?
@@ -56,7 +156,10 @@
                     start + before.length;
 
                 textarea.focus();
-                if (textarea.setSelectionRange) {
+
+                if (isContentEditable) {
+                    setContentEditableSelection(textarea, newCursorPos, newCursorPos);
+                } else if (textarea.setSelectionRange) {
                     textarea.setSelectionRange(newCursorPos, newCursorPos);
                 }
 
@@ -70,7 +173,18 @@
 
         window.insertCode = function() {
             const textarea = document.getElementById('editor_content');
-            const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+
+            // contenteditable要素かどうかを判定
+            const isContentEditable = textarea.contentEditable === 'true' ||
+                                    textarea.getAttribute('contenteditable') === 'true';
+
+            let selectedText;
+            if (isContentEditable) {
+                const selection = getContentEditableSelection(textarea);
+                selectedText = selection.selectedText;
+            } else {
+                selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+            }
 
             if (selectedText.includes('\n')) {
                 // 改行が含まれている場合はコードブロック
@@ -93,7 +207,14 @@
 
                 if (isPreviewMode) {
                     // プレビューモードに切り替え
-                    const markdownText = textarea.value || '';
+                    // contenteditable要素かどうかを判定してテキストを取得
+                    const isContentEditable = textarea.contentEditable === 'true' ||
+                                            textarea.getAttribute('contenteditable') === 'true';
+
+                    const markdownText = isContentEditable ?
+                        (textarea.innerText || textarea.textContent || '') :
+                        (textarea.value || '');
+
                     const htmlContent = convertMarkdownToHtml(markdownText);
 
                     previewContainer.innerHTML = htmlContent;
@@ -676,25 +797,58 @@
         window.insertTextAtCursor = function(textarea, text) {
             if (!textarea || !text) return;
 
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const currentValue = textarea.value;
+            // contenteditable要素かどうかを判定
+            const isContentEditable = textarea.contentEditable === 'true' ||
+                                    textarea.getAttribute('contenteditable') === 'true';
 
-            // 挿入位置の前後に改行を追加（必要に応じて）
-            let insertText = text;
-            if (start > 0 && currentValue[start - 1] !== '\n') {
-                insertText = '\n' + insertText;
+            if (isContentEditable) {
+                // contenteditable要素の場合
+                const selection = getContentEditableSelection(textarea);
+                const start = selection.start;
+                const end = selection.end;
+                const currentValue = textarea.innerText || textarea.textContent || '';
+
+                // 挿入位置の前後に改行を追加（必要に応じて）
+                let insertText = text;
+                if (start > 0 && currentValue[start - 1] !== '\n') {
+                    insertText = '\n' + insertText;
+                }
+                if (end < currentValue.length && currentValue[end] !== '\n') {
+                    insertText = insertText + '\n';
+                }
+
+                const newValue = currentValue.substring(0, start) + insertText + currentValue.substring(end);
+                textarea.innerText = newValue;
+                textarea.focus();
+
+                const newCursorPos = start + insertText.length;
+                setContentEditableSelection(textarea, newCursorPos, newCursorPos);
+
+                // 入力イベントを発火
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+            } else {
+                // 通常のtextarea要素の場合
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+
+                // 挿入位置の前後に改行を追加（必要に応じて）
+                let insertText = text;
+                if (start > 0 && currentValue[start - 1] !== '\n') {
+                    insertText = '\n' + insertText;
+                }
+                if (end < currentValue.length && currentValue[end] !== '\n') {
+                    insertText = insertText + '\n';
+                }
+
+                textarea.value = currentValue.substring(0, start) + insertText + currentValue.substring(end);
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+
+                // Railsのフォームバリデーション用にchangeイベントを発火
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            if (end < currentValue.length && currentValue[end] !== '\n') {
-                insertText = insertText + '\n';
-            }
-
-            textarea.value = currentValue.substring(0, start) + insertText + currentValue.substring(end);
-            textarea.focus();
-            textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
-
-            // Railsのフォームバリデーション用にchangeイベントを発火
-            textarea.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         // 遅延実行のためのデバウンス関数
