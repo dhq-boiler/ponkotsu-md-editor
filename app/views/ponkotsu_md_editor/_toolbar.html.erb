@@ -24,117 +24,117 @@
 <div class="editor-toolbar mb-2">
   <div class="btn-group btn-group-sm" role="group">
     <% if enable_bold %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('**', '**')" title="太字 (Ctrl+B)">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-bold-btn" onclick="insertMarkdown('**', '**')" title="太字 (Ctrl+B)">
       <i class="bi bi-type-bold"></i>
     </button>
     <% end %>
 
     <% if enable_italic %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('*', '*')" title="斜体 (Ctrl+I)">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-italic-btn" onclick="insertMarkdown('*', '*')" title="斜体 (Ctrl+I)">
       <i class="bi bi-type-italic"></i>
     </button>
     <% end %>
 
     <% if enable_strikethrough %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('~~', '~~')" title="打ち消し線">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-strikethrough-btn" onclick="insertMarkdown('~~', '~~')" title="打ち消し線">
       <i class="bi bi-type-strikethrough"></i>
     </button>
     <% end %>
 
     <% if enable_code %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('`', '`')" title="インラインコード">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-btn" onclick="insertMarkdown('`', '`')" title="インラインコード">
       <i class="bi bi-code"></i>
     </button>
     <% end %>
   </div>
   <div class="btn-group btn-group-sm ms-2" role="group">
     <% if enable_heading1 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('# ', '')" title="見出し1">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading1-btn" onclick="insertMarkdown('# ', '')" title="見出し1">
       <i class="bi bi-type-h1"></i>
     </button>
     <% end %>
 
     <% if enable_heading2 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('## ', '')" title="見出し2">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading2-btn" onclick="insertMarkdown('## ', '')" title="見出し2">
       <i class="bi bi-type-h2"></i>
     </button>
     <% end %>
 
     <% if enable_heading3 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('### ', '')" title="見出し3">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading3-btn" onclick="insertMarkdown('### ', '')" title="見出し3">
       <i class="bi bi-type-h3"></i>
     </button>
     <% end %>
 
     <% if enable_heading4 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('#### ', '')" title="見出し4">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading4-btn" onclick="insertMarkdown('#### ', '')" title="見出し4">
       <i class="bi bi-type-h4"></i>
     </button>
     <% end %>
 
     <% if enable_heading5 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('##### ', '')" title="見出し5">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading5-btn" onclick="insertMarkdown('##### ', '')" title="見出し5">
       <i class="bi bi-type-h5"></i>
     </button>
     <% end %>
 
     <% if enable_heading6 %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('###### ', '')" title="見出し6">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading6-btn" onclick="insertMarkdown('###### ', '')" title="見出し6">
       <i class="bi bi-type-h6"></i>
     </button>
     <% end %>
   </div>
   <div class="btn-group btn-group-sm ms-2" role="group">
     <% if enable_link %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('[', '](URL)')" title="リンク">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-link-btn" onclick="insertMarkdown('[', '](URL)')" title="リンク">
       <i class="bi bi-link-45deg"></i>
     </button>
     <% end %>
 
     <% if enable_unordered_list %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('- ', '')" title="箇条書きリスト">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-unordered-list-btn" onclick="insertMarkdown('- ', '')" title="箇条書きリスト">
       <i class="bi bi-list-ul"></i>
     </button>
     <% end %>
 
     <% if enable_ordered_list %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('1. ', '')" title="番号付きリスト">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-ordered-list-btn" onclick="insertMarkdown('1. ', '')" title="番号付きリスト">
       <i class="bi bi-list-ol"></i>
     </button>
     <% end %>
 
     <% if enable_code_block %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertCode()" title="コードスパンまたはコードブロック">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-block-btn" onclick="insertCode()" title="コードスパンまたはコードブロック">
       <i class="bi bi-code-square"></i>
     </button>
     <% end %>
 
     <% if enable_blockquote %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('> ', '')" title="引用">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-blockquote-btn" onclick="insertMarkdown('> ', '')" title="引用">
       <i class="bi bi-quote"></i>
     </button>
     <% end %>
 
     <% if enable_image %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('![', '](画像URL)')" title="画像">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-image-btn" onclick="insertMarkdown('![', '](画像URL)')" title="画像">
       <i class="bi bi-image"></i>
     </button>
     <% end %>
 
     <% if enable_table %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertTable()" title="テーブル">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-table-btn" onclick="insertTable()" title="テーブル">
       <i class="bi bi-table"></i>
     </button>
     <% end %>
 
     <% if enable_horizontal_rule %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('\n---\n', '')" title="水平線">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-horizontal-rule-btn" onclick="insertMarkdown('\n---\n', '')" title="水平線">
       <i class="bi bi-dash-lg"></i>
     </button>
     <% end %>
 
     <% if enable_check_list %>
-    <button type="button" class="btn btn-outline-secondary" onclick="insertMarkdown('- [ ] ', '')" title="チェックボックス">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-check-list-btn" onclick="insertMarkdown('- [ ] ', '')" title="チェックボックス">
       <i class="bi bi-check-square"></i>
     </button>
     <% end %>
@@ -142,7 +142,7 @@
 
   <% if enable_preview %>
   <div class="btn-group btn-group-sm ms-2" role="group">
-    <button type="button" class="btn btn-outline-primary" onclick="togglePreview()" id="previewToggle">
+    <button type="button" class="btn btn-outline-primary" id="toolbar-preview-btn" onclick="togglePreview()">
       <i class="bi bi-eye"></i> プレビュー
     </button>
   </div>
