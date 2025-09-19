@@ -10,20 +10,20 @@ module PonkotsuMdEditor
   module Helpers
     # Renders a Markdown editor component with the specified content and options
     #
-    # @param form [ActionView::Helpers::FormBuilder] Form builder object
+    # @param f [ActionView::Helpers::FormBuilder] Form builder object
     # @param content [String] Initial content to display in the editor (default: "")
     # @param options [Hash] Configuration options for the editor (default: {})
     # @return [String] Rendered HTML for the Markdown editor
     #
     # Example usage in a Rails view:
-    #   <%= markdown_editor(form, :content, {
+    #   <%= markdown_editor(f, :content, {
     #                                         lang: :en,
     #                                         preview: true,
     #                                         tools: [ :bold, :italic, :strikethrough ],
     #                                         placeholder: "This is Placeholder."
     #                                       }) %>
-    def markdown_editor(form, content = "", options = {})
-      render "ponkotsu_md_editor/editor", locals: { content: content, form: form, options: options }
+    def markdown_editor(f, content = "", options = {})
+      render "ponkotsu_md_editor/editor", locals: { content: content, form: f, options: options }
     end
   end
 end
