@@ -4,7 +4,7 @@ require_relative "lib/ponkotsu/md/editor/version"
 
 Gem::Specification.new do |spec|
   spec.name = "ponkotsu-md-editor"
-  spec.version = Ponkotsu::Md::Editor::VERSION
+  spec.version = PonkotsuMdEditor::VERSION
   spec.authors = ["dhq_boiler"]
   spec.email = ["dhq_boiler@live.jp"]
 
