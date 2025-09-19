@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "editor/"
-
 module PonkotsuMdEditor
   class Error < StandardError; end
   # Your code goes here...
