@@ -23,7 +23,7 @@ module PonkotsuMdEditor
     #                                         placeholder: "This is Placeholder."
     #                                       }) %>
     def markdown_editor(form, content = "", options = {})
-      render "ponkotsu_md_editor/editor", content: content, form: form, options: options
+      render "ponkotsu_md_editor/editor", locals: { content: content, form: form, options: options }
     end
   end
 end
