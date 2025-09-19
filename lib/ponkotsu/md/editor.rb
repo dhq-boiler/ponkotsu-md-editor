@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "editor/version"
 require_relative "editor/helpers"
 require_relative "editor/engine" if defined?(Rails)
