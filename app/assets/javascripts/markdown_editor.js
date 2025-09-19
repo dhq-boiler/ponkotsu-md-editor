@@ -283,6 +283,19 @@
                     selectedText = textarea.value.substring(start, end);
                 }
 
+                // Bold（**）の場合のみ、選択範囲の両端に余分な空白・改行があれば除外
+                if (before === '**' && after === '**' && selectedText.length > 0) {
+                    let left = 0;
+                    let right = selectedText.length;
+                    while (left < right && /[\s\n]/.test(selectedText[left])) left++;
+                    while (right > left && /[\s\n]/.test(selectedText[right-1])) right--;
+                    if (left !== 0 || right !== selectedText.length) {
+                        start += left;
+                        end -= (selectedText.length - right);
+                        selectedText = selectedText.substring(left, right);
+                    }
+                }
+
                 const fullText = isContentEditable ?
                     (textarea.innerText || textarea.textContent || '') :
                     textarea.value;
