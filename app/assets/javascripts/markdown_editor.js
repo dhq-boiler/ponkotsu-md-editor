@@ -396,80 +396,196 @@
             }
         }
 
-        // Apply Markdown to contenteditable element (main implementation)
+        // Apply Markdown to contenteditable element (main implementation with line break preservation)
         function applyMarkdownToContentEditable(element, before, after, options) {
-            const info = getContentEditableSelection(element);
-            const text = getContentEditableText(element);
+            const selection = window.getSelection();
+
+            // If no selection, insert markers at cursor position
+            if (selection.rangeCount === 0) {
+                const currentPos = getCaretPosition(element);
+                insertTextAtPosition(element, currentPos, before + after);
+                setTimeout(() => {
+                    setCaretPosition(element, currentPos + before.length);
+                }, 10);
+                return { success: true };
+            }
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
 
             console.log('Markdown apply debug:');
-            console.log('Full text:', JSON.stringify(text));
-            console.log('Selected text:', JSON.stringify(info.selectedText));
-            console.log('Start:', info.start, 'End:', info.end);
-            console.log('Markers:', JSON.stringify({ before, after }));
+            console.log('Selected text:', JSON.stringify(selectedText));
+            console.log('Before markup:', JSON.stringify(before));
+            console.log('After markup:', JSON.stringify(after));
 
-            const beforeText = text.substring(0, info.start);
-            const afterText = text.substring(info.end);
-            const selectedText = info.selectedText;
-
-            // Build new text with Markdown formatting
-            let newText;
-            let newCursorPos;
-
-            if (selectedText.length > 0) {
-                // Text is selected - wrap it with markers
-                newText = beforeText + before + selectedText + after + afterText;
-
-                if (options.preserveSelection) {
-                    // Keep the original text selected (but now formatted)
-                    const newStart = info.start + before.length;
-                    const newEnd = newStart + selectedText.length;
-                    setTimeout(() => {
-                        setContentEditableSelection(element, newStart, newEnd);
-                    }, 10);
-                } else if (options.selectAfterApply) {
-                    // Select the entire formatted text including markers
-                    const newStart = info.start;
-                    const newEnd = info.start + before.length + selectedText.length + after.length;
-                    setTimeout(() => {
-                        setContentEditableSelection(element, newStart, newEnd);
-                    }, 10);
-                } else {
-                    // Move cursor after the formatted text
-                    newCursorPos = info.start + before.length + selectedText.length + after.length;
-                }
-            } else {
-                // Cursor position - insert empty markers
-                newText = beforeText + before + after + afterText;
-
-                if (options.cursorBetweenMarkers) {
-                    // Move cursor between markers
-                    newCursorPos = info.start + before.length;
-                } else {
-                    // Move cursor after both markers
-                    newCursorPos = info.start + before.length + after.length;
-                }
-            }
-
-            console.log('New text:', JSON.stringify(newText));
-
-            // Update text content
-            setContentEditableText(element, newText);
-            element.focus();
-
-            // Set cursor position with slight delay for DOM update
-            if (newCursorPos !== undefined) {
+            if (selectedText.length === 0) {
+                // No selection - insert markers at cursor position
+                const currentPos = getCaretPosition(element);
+                insertTextAtPosition(element, currentPos, before + after);
                 setTimeout(() => {
-                    setContentEditableSelection(element, newCursorPos, newCursorPos);
+                    setCaretPosition(element, currentPos + before.length);
                 }, 10);
+                return { success: true };
             }
 
-            return {
-                success: true,
-                originalText: text,
-                newText: newText,
-                selectedText: selectedText,
-                appliedFormatting: { before, after }
-            };
+            // Use DOM manipulation to preserve line breaks
+            try {
+                const newText = before + selectedText + after;
+
+                // Delete selected content and insert new text node
+                range.deleteContents();
+                const textNode = document.createTextNode(newText);
+                range.insertNode(textNode);
+
+                // Set cursor position after the inserted text
+                const newRange = document.createRange();
+                newRange.setStartAfter(textNode);
+                newRange.collapse(true);
+
+                const newSelection = window.getSelection();
+                newSelection.removeAllRanges();
+                newSelection.addRange(newRange);
+
+                console.log('DOM replacement completed successfully');
+
+                // Fire input event for change detection
+                element.dispatchEvent(new Event('input', { bubbles: true }));
+
+                return {
+                    success: true,
+                    selectedText: selectedText,
+                    appliedFormatting: { before, after }
+                };
+
+            } catch (error) {
+                console.error('DOM replacement failed:', error);
+
+                // Fallback: Use Range API for text replacement
+                try {
+                    const beforeRange = document.createRange();
+                    beforeRange.selectNodeContents(element);
+                    beforeRange.setEnd(range.startContainer, range.startOffset);
+                    const beforeText = beforeRange.toString();
+
+                    const afterRange = document.createRange();
+                    afterRange.selectNodeContents(element);
+                    afterRange.setStart(range.endContainer, range.endOffset);
+                    const afterText = afterRange.toString();
+
+                    const newFullText = beforeText + before + selectedText + after + afterText;
+                    element.innerText = newFullText;
+
+                    const newCursorPos = beforeText.length + before.length + selectedText.length + after.length;
+                    setTimeout(() => {
+                        setCaretPosition(element, newCursorPos);
+                    }, 10);
+
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    return {
+                        success: true,
+                        selectedText: selectedText,
+                        appliedFormatting: { before, after }
+                    };
+
+                } catch (fallbackError) {
+                    console.error('Fallback replacement failed:', fallbackError);
+                    return { success: false, error: fallbackError };
+                }
+            }
+        }
+
+        // Helper function to get caret position in contenteditable element
+        function getCaretPosition(element) {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return 0;
+
+            const range = selection.getRangeAt(0);
+            const beforeRange = document.createRange();
+            beforeRange.selectNodeContents(element);
+            beforeRange.setEnd(range.startContainer, range.startOffset);
+            return beforeRange.toString().length;
+        }
+
+        // Helper function to set caret position in contenteditable element
+        function setCaretPosition(element, position) {
+            const text = element.innerText;
+            position = Math.max(0, Math.min(position, text.length));
+
+            // Get text nodes using TreeWalker
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentPos = 0;
+            let node;
+
+            while (node = walker.nextNode()) {
+                const nodeLength = node.textContent.length;
+
+                if (currentPos + nodeLength >= position) {
+                    const offset = position - currentPos;
+                    const range = document.createRange();
+                    range.setStart(node, offset);
+                    range.collapse(true);
+
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    return;
+                }
+
+                currentPos += nodeLength;
+            }
+
+            // Fallback: set cursor at the end
+            if (element.childNodes.length > 0) {
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                range.collapse(false);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+
+        // Helper function to insert text at specific position in contenteditable element
+        function insertTextAtPosition(element, position, text) {
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentPos = 0;
+            let node;
+
+            while (node = walker.nextNode()) {
+                const nodeLength = node.textContent.length;
+
+                if (currentPos + nodeLength >= position) {
+                    const offset = position - currentPos;
+
+                    // Insert text at the specific position within the text node
+                    const range = document.createRange();
+                    range.setStart(node, offset);
+                    range.collapse(true);
+
+                    const textNode = document.createTextNode(text);
+                    range.insertNode(textNode);
+                    return;
+                }
+
+                currentPos += nodeLength;
+            }
+
+            // Fallback: append to the end
+            const textNode = document.createTextNode(text);
+            element.appendChild(textNode);
         }
 
         // Apply Markdown to textarea (fallback for traditional textarea)
