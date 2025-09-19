@@ -5,7 +5,7 @@
     lang: options[:lang] || :en,
     preview: options[:preview] || true,
     tools: options[:tools] || %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule],
-    placeholder: options[:placeholder] || case lang
+    placeholder: options[:placeholder] || case (options[:lang] || :en)
     when :en
       <<-EOS
       EOS
@@ -63,7 +63,7 @@
   <%= render "input_area", form: form, options: _options %>
 </div>
 <div class="form-text medium-contrast-text">
-  <strong><%= case lang
+  <strong><%= case _options[:lang]
               when :en
                 "You can write in Markdown."
               when :ja
@@ -72,7 +72,7 @@
                 "N/A"
               end %></strong>
   <a href="#" data-bs-toggle="modal" data-bs-target="#markdownHelpModal" class="text-decoration-none" style="color: var(--accent-color);">
-    <%= case lang
+    <%= case _options[:lang]
         when :en
           "Writing Guide"
         when :ja
@@ -81,7 +81,7 @@
           "N/A"
         end %>
   </a> |
-  <strong><%= case lang
+  <strong><%= case _options[:lang]
               when :en
                 "Keyboard Shortcuts"
               when :ja
@@ -89,7 +89,7 @@
               else
                 "N/A"
               end %>：</strong>
-  <%= case lang
+  <%= case _options[:lang]
       when :en
         "Ctrl+B (Bold), Ctrl+I (Italic), Ctrl+K (Link), Tab (Indent)"
       when :ja
