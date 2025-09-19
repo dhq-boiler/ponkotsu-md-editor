@@ -113,6 +113,18 @@
             // Get actual selected text from innerText
             const selectedText = fullText.substring(startPos, endPos);
 
+            // === デバッグ出力 ===
+            console.log('[DEBUG] getContentEditableSelection');
+            console.log('fullText:', JSON.stringify(fullText));
+            console.log('startPos:', startPos, 'endPos:', endPos);
+            console.log('selectedText:', JSON.stringify(selectedText));
+            console.log('textNodes:', textNodes.map(n => n.textContent));
+            console.log('range.startContainer:', range.startContainer);
+            console.log('range.startOffset:', range.startOffset);
+            console.log('range.endContainer:', range.endContainer);
+            console.log('range.endOffset:', range.endOffset);
+            // ===================
+
             return {
                 start: startPos,
                 end: endPos,
