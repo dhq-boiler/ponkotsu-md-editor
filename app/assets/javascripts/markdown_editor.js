@@ -27,10 +27,6 @@
         const textarea = getElement('.markdown-textarea');
         const previewContainer = getElement('#markdownPreview');
         const previewToggle = getElement('#previewToggle');
-        const titleField = getElement('#article_title');
-        const slugField = getElement('#article_slug');
-        const generateBtn = getElement('#generateSlugBtn');
-        const slugPreview = getElement('#slugPreview');
 
         let isPreviewMode = false;
 
@@ -73,7 +69,7 @@
         };
 
         window.insertCode = function() {
-            const textarea = document.getElementById('article_content');
+            const textarea = document.getElementById('editor_content');
             const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
 
             if (selectedText.includes('\n')) {
@@ -648,16 +644,6 @@
             }
         };
 
-// デバッグ用：サニタイズテスト
-        window.testSanitization = function() {
-            const testInput = `<blockquote class="twitter-tweet"><p lang="ja" dir="ltr">ニーアでも聞きながら作業しますかね。<a href="https://t.co/Ac9X8lEaZL">https://t.co/Ac9X8lEaZL</a></p>&mdash; ボイラー (@dhq_boiler) <a href="https://twitter.com/dhq_boiler/status/1942584009550409780?ref_src=twsrc%5Etfw">July 8, 2025</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>`;
-
-            const result = convertMarkdownToHtml(testInput);
-            console.log('Original:', testInput);
-            console.log('Converted:', result);
-            return result;
-        };
-
         // Twitter埋め込み用のヘルパー関数
         window.insertTwitterEmbed = function() {
             const tweetUrl = prompt('TwitterのツイートURLを入力してください：');
@@ -669,7 +655,7 @@
                 return;
             }
 
-            const textarea = document.getElementById('article_content');
+            const textarea = document.getElementById('editor_content');
             if (!textarea) return;
 
             // 簡単なTwitter埋め込みコードのテンプレート
@@ -685,6 +671,31 @@
 
             alert('基本的なTwitter埋め込みを挿入しました。\n\n完全な埋め込みには、Twitter公式から生成されたコードを使用してください。');
         };
+
+        // テキストエリアのカーソル位置にテキストを挿入
+        window.insertTextAtCursor = function(textarea, text) {
+            if (!textarea || !text) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentValue = textarea.value;
+
+            // 挿入位置の前後に改行を追加（必要に応じて）
+            let insertText = text;
+            if (start > 0 && currentValue[start - 1] !== '\n') {
+                insertText = '\n' + insertText;
+            }
+            if (end < currentValue.length && currentValue[end] !== '\n') {
+                insertText = insertText + '\n';
+            }
+
+            textarea.value = currentValue.substring(0, start) + insertText + currentValue.substring(end);
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+
+            // Railsのフォームバリデーション用にchangeイベントを発火
+            textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        }
 
         // 遅延実行のためのデバウンス関数
         function debounce(func, wait) {
@@ -738,113 +749,7 @@
             });
         }
 
-        // フォームバリデーション
-        const form = getElement('.article-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                const title = titleField && titleField.value.trim();
-                const content = textarea && textarea.value.trim();
-
-                if (!title) {
-                    e.preventDefault();
-                    alert('タイトルを入力してください');
-                    if (titleField) {
-                        titleField.focus();
-                        titleField.scrollIntoView({ behavior: 'smooth' });
-                    }
-                    return false;
-                }
-
-                if (!content) {
-                    e.preventDefault();
-                    alert('本文を入力してください');
-                    if (textarea) {
-                        textarea.focus();
-                        textarea.scrollIntoView({ behavior: 'smooth' });
-                    }
-                    return false;
-                }
-
-                // スラッグが空の場合は最後の努力で生成
-                if (slugField && !slugField.value.trim() && title) {
-                    e.preventDefault();
-
-                    generateHighQualitySlug(title).then(slug => {
-                        if (slug) {
-                            slugField.value = slug;
-                            form.submit(); // 再送信
-                        } else {
-                            alert('スラッグの生成に失敗しました。手動で入力してください。');
-                            slugField.focus();
-                        }
-                    }).catch(error => {
-                        console.error('Final slug generation failed:', error);
-                        alert('スラッグの生成でエラーが発生しました。手動で入力してください。');
-                        slugField.focus();
-                    });
-
-                    return false;
-                }
-
-                // スラッグの形式チェック
-                if (slugField && slugField.value.trim()) {
-                    const slug = slugField.value.trim();
-                    if (!/^[a-z0-9\-]+$/.test(slug)) {
-                        e.preventDefault();
-                        alert('スラッグは英小文字、数字、ハイフンのみ使用できます');
-                        slugField.focus();
-                        slugField.select();
-                        return false;
-                    }
-                }
-            });
-        }
-
-        // リアルタイムバリデーション
-        if (slugField) {
-            slugField.addEventListener('blur', function() {
-                const slug = this.value.trim();
-                if (slug && !/^[a-z0-9\-]+$/.test(slug)) {
-                    this.classList.add('is-invalid');
-
-                    // エラーメッセージを表示
-                    let errorDiv = this.parentNode.querySelector('.invalid-feedback');
-                    if (!errorDiv) {
-                        errorDiv = document.createElement('div');
-                        errorDiv.className = 'invalid-feedback';
-                        this.parentNode.appendChild(errorDiv);
-                    }
-                    errorDiv.textContent = '英小文字、数字、ハイフンのみ使用できます';
-                } else {
-                    this.classList.remove('is-invalid');
-                    const errorDiv = this.parentNode.querySelector('.invalid-feedback');
-                    if (errorDiv) {
-                        errorDiv.remove();
-                    }
-                }
-            });
-        }
-
         console.log('ponkotsu Markdown editor initialized successfully');
-    });
-
-    // ページ離脱確認
-    window.addEventListener('beforeunload', function(e) {
-        try {
-            const textarea = getElement('.markdown-textarea');
-            const titleField = getElement('#article_title');
-
-            const hasContent = (textarea && textarea.value.trim()) ||
-                (titleField && titleField.value.trim());
-
-            if (hasContent) {
-                const message = '編集中の内容が失われますがよろしいですか？';
-                e.returnValue = message;
-                return message;
-            }
-        } catch (error) {
-            console.error('Beforeunload error:', error);
-        }
     });
 
     // エラーハンドリングの強化
