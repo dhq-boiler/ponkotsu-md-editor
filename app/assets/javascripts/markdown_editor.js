@@ -292,25 +292,59 @@
                 if (before === '**' && after === '**' && selectedText.length > 0) {
                     let left = 0;
                     let right = selectedText.length;
-                    // 先頭が「\n 」ならスペース除去
-                    if (selectedText.startsWith('\n ')) {
-                        left += 2;
-                    } else if (selectedText[0] === ' ' && (start > 0 && fullText[start-1] === '\n')) {
-                        left += 1;
+                    // 先頭: 連続する「改行＋スペース」をすべて除去
+                    while (true) {
+                        if (selectedText.startsWith('\n ')) {
+                            left += 2;
+                            selectedText = selectedText.substring(2);
+                        } else if (selectedText.startsWith('\n')) {
+                            left += 1;
+                            selectedText = selectedText.substring(1);
+                        } else if (selectedText.startsWith(' ')) {
+                            // 直前が改行なら除去
+                            if (start + left > 0 && fullText[start + left - 1] === '\n') {
+                                left += 1;
+                                selectedText = selectedText.substring(1);
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
-                    // 末尾が「 \n」ならスペース除去
-                    if (selectedText.endsWith(' \n')) {
-                        right -= 2;
-                    } else if (selectedText[selectedText.length-1] === ' ' && (end < fullText.length && fullText[end] === '\n')) {
-                        right -= 1;
+                    // 末尾: 連続する「スペース＋改行」をすべて除去
+                    while (true) {
+                        if (selectedText.endsWith(' \n')) {
+                            right -= 2;
+                            selectedText = selectedText.substring(0, selectedText.length - 2);
+                        } else if (selectedText.endsWith('\n')) {
+                            right -= 1;
+                            selectedText = selectedText.substring(0, selectedText.length - 1);
+                        } else if (selectedText.endsWith(' ')) {
+                            // 直後が改行なら除去
+                            if (end - (selectedText.length - right) < fullText.length && fullText[end - (selectedText.length - right)] === '\n') {
+                                right -= 1;
+                                selectedText = selectedText.substring(0, selectedText.length - 1);
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
                     // 既存の両端trimも併用（ただしスペース・改行のみ）
-                    while (left < right && /[\s\n]/.test(selectedText[left])) left++;
-                    while (right > left && /[\s\n]/.test(selectedText[right-1])) right--;
+                    while (left < right && /[\s\n]/.test(selectedText[0])) {
+                        left++;
+                        selectedText = selectedText.substring(1);
+                    }
+                    while (right > left && /[\s\n]/.test(selectedText[selectedText.length-1])) {
+                        right--;
+                        selectedText = selectedText.substring(0, selectedText.length-1);
+                    }
                     if (left !== 0 || right !== selectedText.length) {
                         start += left;
                         end -= (selectedText.length - right);
-                        selectedText = selectedText.substring(left, right);
+                        // selectedTextはすでにtrim済み
                     }
                 }
 
