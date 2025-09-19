@@ -1,7 +1,7 @@
 <%
+  _form = form
+  _content = content
   _options = {
-    form: form,
-    content: content,
     lang: options[:lang] || :en,
     preview: options[:preview] || true,
     tools: options[:tools] || %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule],
@@ -60,7 +60,7 @@
 
 <div class="markdown-editor">
   <%= render "ponkotsu_md_editor/toolbar", options: _options %>
-  <%= render "ponkotsu_md_editor/input_area", form: form, options: _options %>
+  <%= render "ponkotsu_md_editor/input_area", form: _form, content: _content, options: _options %>
 </div>
 <div class="form-text medium-contrast-text">
   <strong><%= case _options[:lang]
