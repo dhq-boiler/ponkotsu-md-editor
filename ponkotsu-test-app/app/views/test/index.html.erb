@@ -1,0 +1,296 @@
+<div class="container mt-4">
+  <h1>Ponkotsu Markdown Editor - Bold Function Test (Real Gem)</h1>
+
+  <div class="alert alert-info">
+    <h4>🎯 実際のgemを使用したテスト環境</h4>
+    <p>この環境では、実際のponkotsu-md-editorのgemを使用してテストできます。</p>
+    <ul>
+      <li>✅ 実際のRailsアプリケーション環境</li>
+      <li>✅ 実際のgemのJavaScript・CSS</li>
+      <li>✅ 実際のERBテンプレート</li>
+      <li>✅ 本番と同じDOMイベント処理</li>
+    </ul>
+  </div>
+
+  <%= form_with url: test_path, local: true, html: { class: "card" } do |form| %>
+    <div class="card-body">
+      <h3 class="card-title">エディタテスト</h3>
+
+      <!-- 実際のgemを使用したエディタ -->
+      <%= render "ponkotsu_md_editor/editor",
+          form: form,
+          content: @content,
+          options: {
+            lang: :ja,
+            preview: true,
+            tools: %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule]
+          } %>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-floppy"></i> 保存してテスト
+        </button>
+
+        <button type="button" class="btn btn-success" onclick="runBoldTests()">
+          <i class="bi bi-play-circle"></i> Bold機能テスト実行
+        </button>
+
+        <button type="button" class="btn btn-warning" onclick="showEditorInfo()">
+          <i class="bi bi-info-circle"></i> エディタ情報表示
+        </button>
+
+        <button type="button" class="btn btn-danger" onclick="clearEditorContent()">
+          <i class="bi bi-trash"></i> エディタクリア
+        </button>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- テスト結果表示エリア -->
+  <div class="card mt-4">
+    <div class="card-body">
+      <h3 class="card-title">テスト結果</h3>
+      <div id="testResults">
+        <p class="text-muted">「Bold機能テスト実行」ボタンをクリックしてテストを開始してください。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- デバッグ情報表示エリア -->
+  <div class="card mt-4">
+    <div class="card-body">
+      <h3 class="card-title">デバッグ情報</h3>
+      <div id="debugInfo" class="font-monospace small bg-light p-3 rounded">
+        エディタ情報がここに表示されます
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 実際のgemのJavaScriptと連携するテストスクリプト
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Ponkotsu Markdown Editor Test Page Loaded');
+
+    // エディタ要素を取得
+    const editor = document.getElementById('editor_content');
+    if (editor) {
+        console.log('Editor found:', editor);
+
+        // 初期状態の情報を表示
+        showEditorInfo();
+
+        // エディタのイベントリスナーを追加
+        editor.addEventListener('input', function() {
+            showEditorInfo();
+        });
+
+        editor.addEventListener('mouseup', function() {
+            showEditorInfo();
+        });
+
+        editor.addEventListener('keyup', function() {
+            showEditorInfo();
+        });
+    } else {
+        console.error('Editor not found');
+    }
+});
+
+// エディタ情報表示
+function showEditorInfo() {
+    const editor = document.getElementById('editor_content');
+    const debugDiv = document.getElementById('debugInfo');
+
+    if (!editor || !debugDiv) return;
+
+    const selection = window.getSelection();
+    let selectionInfo = 'No selection';
+
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+
+        // 選択範囲の位置を計算
+        const beforeRange = document.createRange();
+        beforeRange.selectNodeContents(editor);
+        beforeRange.setEnd(range.startContainer, range.startOffset);
+        const startPos = beforeRange.toString().length;
+
+        const upToEndRange = document.createRange();
+        upToEndRange.selectNodeContents(editor);
+        upToEndRange.setEnd(range.endContainer, range.endOffset);
+        const endPos = upToEndRange.toString().length;
+
+        selectionInfo = `開始: ${startPos}, 終了: ${endPos}, 長さ: ${selectedText.length}, テキスト: "${selectedText}"`;
+    }
+
+    debugDiv.innerHTML = `
+        <strong>エディタ情報:</strong><br>
+        全体テキスト長: ${editor.innerText.length}<br>
+        選択範囲: ${selectionInfo}<br>
+        innerHTML長: ${editor.innerHTML.length}<br>
+        <strong>実際のgemが使用されています ✓</strong><br>
+        <small>更新時刻: ${new Date().toLocaleTimeString()}</small>
+    `;
+}
+
+// Bold機能テスト実行
+function runBoldTests() {
+    const resultsDiv = document.getElementById('testResults');
+    const editor = document.getElementById('editor_content');
+
+    if (!editor) {
+        resultsDiv.innerHTML = '<div class="alert alert-danger">エディタが見つかりません</div>';
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="alert alert-info">テストを実行中...</div>';
+
+    const tests = [
+        {
+            name: '日本語テキストのBold適用テスト',
+            setup: 'これはテストです。\n改行があります。',
+            action: function() {
+                // "テスト"を選択してBold適用
+                const text = editor.innerText;
+                const target = 'テスト';
+                const startPos = text.indexOf(target);
+                if (startPos >= 0) {
+                    setSelectionRange(editor, startPos, startPos + target.length);
+                    // 実際のgemのBold関数を呼び出し
+                    if (window.applyBold) {
+                        window.applyBold();
+                        return true;
+                    } else if (window.insertMarkdown) {
+                        window.insertMarkdown('**', '**');
+                        return true;
+                    }
+                }
+                return false;
+            },
+            expected: 'これは**テスト**です。\n改行があります。'
+        },
+        {
+            name: '改行をまたぐBold適用テスト',
+            setup: '一行目です。\n二行目です。',
+            action: function() {
+                // "です。\n二"を選択してBold適用
+                const text = editor.innerText;
+                const startPos = text.indexOf('です。');
+                if (startPos >= 0) {
+                    setSelectionRange(editor, startPos, startPos + 5); // "です。\n二"
+                    if (window.applyBold) {
+                        window.applyBold();
+                        return true;
+                    } else if (window.insertMarkdown) {
+                        window.insertMarkdown('**', '**');
+                        return true;
+                    }
+                }
+                return false;
+            },
+            expected: '一行目**です。\n二**行目です。'
+        }
+    ];
+
+    let results = '<h4>Bold機能テスト結果</h4>';
+    let passCount = 0;
+
+    tests.forEach((test, index) => {
+        // テストセットアップ
+        editor.innerText = test.setup;
+        editor.focus();
+
+        // テスト実行
+        const success = test.action();
+
+        // 結果確認
+        const actual = editor.innerText;
+        const passed = actual === test.expected;
+
+        if (passed) passCount++;
+
+        results += `
+            <div class="alert ${passed ? 'alert-success' : 'alert-danger'}">
+                <strong>${test.name}</strong>: ${passed ? '✅ PASS' : '❌ FAIL'}<br>
+                <small>期待値: "${test.expected}"</small><br>
+                <small>実際値: "${actual}"</small><br>
+                <small>実行成功: ${success ? 'Yes' : 'No'}</small>
+            </div>
+        `;
+    });
+
+    results += `<div class="alert alert-info"><strong>結果: ${passCount}/${tests.length} テストが成功</strong></div>`;
+    resultsDiv.innerHTML = results;
+
+    // テスト完了後、エディタをリセット
+    setTimeout(() => {
+        editor.innerText = 'content content content\ncontent content content\n\n\ncontent content content\n\n\ncontent content content';
+        showEditorInfo();
+    }, 1000);
+}
+
+// テキスト選択ヘルパー関数
+function setSelectionRange(element, start, end) {
+    element.focus();
+
+    const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+
+    let currentPos = 0;
+    let startNode = null, startOffset = 0;
+    let endNode = null, endOffset = 0;
+
+    for (let i = 0; i < textNodes.length; i++) {
+        const textNode = textNodes[i];
+        const nodeLength = textNode.textContent.length;
+
+        if (!startNode && currentPos + nodeLength >= start) {
+            startNode = textNode;
+            startOffset = start - currentPos;
+        }
+
+        if (!endNode && currentPos + nodeLength >= end) {
+            endNode = textNode;
+            endOffset = end - currentPos;
+            break;
+        }
+
+        currentPos += nodeLength;
+    }
+
+    if (startNode && endNode) {
+        try {
+            const range = document.createRange();
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
+
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } catch (e) {
+            console.error('Selection failed:', e);
+        }
+    }
+}
+
+// エディタクリア
+function clearEditorContent() {
+    const editor = document.getElementById('editor_content');
+    if (editor) {
+        editor.innerText = '';
+        showEditorInfo();
+    }
+}
+</script>
