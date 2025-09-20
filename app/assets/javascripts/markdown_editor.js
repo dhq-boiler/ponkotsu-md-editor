@@ -272,6 +272,182 @@
             element.innerText = text;
         }
 
+        function getLineAndCharIndex(container, offset) {
+            const walker = document.createTreeWalker(
+                container,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentOffset = 0;
+            let lineNumber = 0;
+            let charInLine = 0;
+            let node;
+
+            while (node = walker.nextNode()) {
+                const nodeText = node.textContent;
+                const nodeLength = nodeText.length;
+
+                if (currentOffset + nodeLength >= offset) {
+                    const offsetInNode = offset - currentOffset;
+                    const textBeforeOffset = nodeText.substring(0, offsetInNode);
+
+                    const allTextBefore = container.textContent.substring(0, currentOffset + offsetInNode);
+                    const linesBeforeOffset = allTextBefore.split('\n');
+
+                    lineNumber = linesBeforeOffset.length - 1;
+                    charInLine = linesBeforeOffset[linesBeforeOffset.length - 1].length;
+
+                    break;
+                }
+
+                currentOffset += nodeLength;
+            }
+
+            return { line: lineNumber, char: charInLine };
+        }
+
+        function getOffsetInContainer(container, node, offset) {
+            const walker = document.createTreeWalker(
+                container,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let currentOffset = 0;
+            let currentNode;
+
+            while (currentNode = walker.nextNode()) {
+                if (currentNode === node) {
+                    return currentOffset + offset;
+                }
+                currentOffset += currentNode.textContent.length;
+            }
+
+            // ノードが見つからない場合（要素ノードの場合など）
+            if (node === container) {
+                return offset;
+            }
+
+            // 要素ノード内の位置を計算
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                let elementOffset = 0;
+                const walker2 = document.createTreeWalker(
+                    container,
+                    NodeFilter.SHOW_ALL,
+                    null,
+                    false
+                );
+
+                let currentNode2;
+                while (currentNode2 = walker2.nextNode()) {
+                    if (currentNode2 === node) {
+                        break;
+                    }
+                    if (currentNode2.nodeType === Node.TEXT_NODE) {
+                        elementOffset += currentNode2.textContent.length;
+                    }
+                }
+
+                // 要素内のオフセット分を追加
+                const textWalker = document.createTreeWalker(
+                    node,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                let internalOffset = 0;
+                let textNode;
+                let nodeIndex = 0;
+
+                while (textNode = textWalker.nextNode()) {
+                    if (nodeIndex === offset) {
+                        break;
+                    }
+                    if (nodeIndex < offset) {
+                        internalOffset += textNode.textContent.length;
+                    }
+                    nodeIndex++;
+                }
+
+                return elementOffset + internalOffset;
+            }
+
+            return 0;
+        }
+
+        function selectLineNumberAndCharIndex(sources, beginCharIndex, endCharIndex) {
+            let retBeginLine = 0, retBeginCharIndex = 0;
+            let retEndLine = 0, retEndCharIndex = 0;
+            for (let i = 0; i < sources.length; i++) {
+                const line = sources[i];
+                if (beginCharIndex >= line.begin && beginCharIndex <= line.end) {
+                    retBeginLine = i;
+                    retBeginCharIndex = beginCharIndex - line.begin;
+                    break;
+                }
+            }
+
+            for (let i = 0; i < sources.length; i++) {
+                const line = sources[i];
+                if (endCharIndex >= line.begin && endCharIndex <= line.end) {
+                    retEndLine = i;
+                    retEndCharIndex = endCharIndex - line.begin;
+                    break;
+                }
+            }
+
+            return { begin: { line: retBeginLine, char: retBeginCharIndex }, end: { line: retEndLine, char: retEndCharIndex } };
+        }
+
+        function replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after) {
+
+            let newLines = [];
+            for (let i = 0; i < beginEndLenStrings.length; i++) {
+                const line = beginEndLenStrings[i];
+                if (i === targetTextPosition.begin.line && i === targetTextPosition.end.line) {
+                    const first = line.str.substring(0, targetTextPosition.begin.char);
+                    const target = line.str.substring(targetTextPosition.begin.char, targetTextPosition.end.char);
+                    const last = line.str.substring(targetTextPosition.end.char);
+                    newLines.push(first + before + target + after + last);
+                }
+                else if (i === targetTextPosition.begin.line) {
+                    const first = line.str.substring(0, targetTextPosition.begin.char);
+                    const target = line.str.substring(targetTextPosition.begin.char);
+                    newLines.push(first + before + target + after);
+                }
+                else if (i === targetTextPosition.end.line) {
+                    const target = line.str.substring(0, targetTextPosition.end.char);
+                    const last = line.str.substring(targetTextPosition.end.char);
+                    newLines.push(before + target + after + last);
+                }
+                else {
+                    newLines.push(line.str);
+                }
+            }
+
+            return newLines;
+        }
+
+        function convertToInnerHtml(newLines) {
+            let html = "";
+            for (let i = 0; i < newLines.length; i++) {
+                if (i === 0) {
+                    html += newLines[i];
+                } else {
+                    let insert = newLines[i];
+                    if (insert === "") {
+                        insert = "<br>";
+                    }
+                    html += "<div>" + insert + "</div>";
+                }
+            }
+            return html;
+        }
+
         // Markdown text insertion functionality
         window.insertMarkdown = function(before, after) {
             after = after || '';
@@ -284,54 +460,94 @@
             try {
                 // Check if element is contenteditable
                 const isContentEditable = textarea.contentEditable === 'true' ||
-                                        textarea.getAttribute('contenteditable') === 'true';
+                    textarea.getAttribute('contenteditable') === 'true';
 
-                let start, end, selectedText;
-
-                if (isContentEditable) {
-                    // For contenteditable elements
-                    const selection = getContentEditableSelection(textarea);
-                    start = selection.start;
-                    end = selection.end;
-                    selectedText = selection.selectedText;
-                } else {
-                    // For regular textarea elements
-                    start = textarea.selectionStart || 0;
-                    end = textarea.selectionEnd || 0;
-                    selectedText = textarea.value.substring(start, end);
+                let remain = textarea.innerHTML;
+                let lines = [];
+                let firstDivFound = false;
+                while (remain.length > 0)
+                {
+                    let idx = remain.indexOf("<");
+                    if (idx >= 0 && remain.substring(idx, idx + 5) === "<div>")
+                    {
+                        if (!firstDivFound) {
+                            lines.push(remain.substring(0, idx));
+                            firstDivFound = true;
+                        }
+                        remain = remain.substring(idx + 5);
+                    }
+                    else if (idx >= 0 && remain.substring(idx, idx + 4) === "<br>")
+                    {
+                        lines.push("");
+                        remain = remain.substring(idx + 4);
+                    }
+                    else if (idx >= 0 && remain.substring(idx, idx + 6) === "</div>")
+                    {
+                        if (idx > 0) {
+                            lines.push(remain.substring(0, idx));
+                        }
+                        remain = remain.substring(idx + 6);
+                    }
+                    else
+                    {
+                        // lines.push(remain);
+                        remain = "";
+                    }
                 }
 
-                // fullTextの定義をここで行う
-                const fullText = isContentEditable ?
-                    (textarea.innerText || textarea.textContent || '') :
-                    textarea.value;
+                //↑↑ここまで完成！↑↑
+                //↓↓ここから未完成↓↓
 
-                // Bold（**）の場合のみ、選択範囲の両端に余分な空白・改行・文末記号があれば除外
-                if (before === '**' && after === '**' && selectedText.length > 0) {
-                    // 両端の「改行・空白・文末記号」をすべて除去（複数連続も対応）
-                    while (/^[\s\n.,;:!?]+/.test(selectedText)) {
-                        selectedText = selectedText.replace(/^[\s\n.,;:!?]+/, '');
-                    }
-                    while (/[\s\n.,;:!?]+$/.test(selectedText)) {
-                        selectedText = selectedText.replace(/[\s\n.,;:!?]+$/, '');
-                    }
+                let offset = 0;
+                let beginEndLenStrings = [];
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i];
+                    beginEndLenStrings.push({
+                        begin: offset,
+                        end: offset + line.length,
+                        len: line.length,
+                        str: line
+                    });
+                    offset += line.length;
                 }
 
-                const beforeText = fullText.substring(0, start);
-                const afterText = fullText.substring(end);
-                const newText = before + selectedText + after;
+                //選択範囲の取得
+                const selection = window.getSelection();
 
-                const newFullText = beforeText + newText + afterText;
+                if (!selection.rangeCount || selection.isCollapsed) {
+                    return;
+                }
+
+                const range = selection.getRangeAt(0);
+
+                if (!textarea.contains(range.commonAncestorContainer) &&
+                    range.commonAncestorContainer !== textarea) {
+                    return;
+                }
+
+                const startOffset = getOffsetInContainer(textarea, range.startContainer, range.startOffset);
+                const endOffset = getOffsetInContainer(textarea, range.endContainer, range.endOffset);
+
+                const startPos = getLineAndCharIndex(textarea, startOffset);
+                const endPos = getLineAndCharIndex(textarea, endOffset);
+
+                const selectedTextContent = selection.toString();
+
+                const targetTextPosition = selectLineNumberAndCharIndex(beginEndLenStrings, startOffset, endOffset);
+
+                const newLines = replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after);
+
+                const newFullHTML = convertToInnerHtml(newLines);
 
                 if (isContentEditable) {
-                    textarea.innerText = newFullText;
+                    textarea.innerHTML = newFullHTML;
                 } else {
-                    textarea.value = newFullText;
+                    textarea.value = newFullHTML;
                 }
 
                 // Adjust cursor position
                 const newCursorPos = selectedText.length > 0 ?
-                    start + newText.length :
+                    start + before.length + selectedText.length + after.length :
                     start + before.length;
 
                 textarea.focus();
@@ -355,7 +571,7 @@
 
             // Check if element is contenteditable
             const isContentEditable = textarea.contentEditable === 'true' ||
-                                    textarea.getAttribute('contenteditable') === 'true';
+                textarea.getAttribute('contenteditable') === 'true';
 
             let selectedText;
             if (isContentEditable) {
@@ -388,7 +604,7 @@
                     // Switch to preview mode
                     // Check if element is contenteditable and get text
                     const isContentEditable = textarea.contentEditable === 'true' ||
-                                            textarea.getAttribute('contenteditable') === 'true';
+                        textarea.getAttribute('contenteditable') === 'true';
 
                     const markdownText = isContentEditable ?
                         (textarea.innerText || textarea.textContent || '') :
@@ -1329,7 +1545,7 @@
 
             // Check if element is contenteditable
             const isContentEditable = textarea.contentEditable === 'true' ||
-                                    textarea.getAttribute('contenteditable') === 'true';
+                textarea.getAttribute('contenteditable') === 'true';
 
             if (isContentEditable) {
                 // For contenteditable elements
