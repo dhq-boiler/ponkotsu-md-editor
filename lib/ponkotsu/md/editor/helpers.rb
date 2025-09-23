@@ -12,6 +12,7 @@ module PonkotsuMdEditor
     #
     # @param form [ActionView::Helpers::FormBuilder] The form builder object.
     # @param attribute [Symbol, String] The attribute name to bind the editor to (e.g., :content).
+    # @param content [String] The initial content to display in the editor.
     # @param options [Hash] Editor configuration options (e.g., :lang, :preview, :tools, :placeholder).
     # @return [String] The rendered HTML for the Markdown editor.
     #
