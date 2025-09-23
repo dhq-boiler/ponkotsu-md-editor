@@ -30,6 +30,30 @@
 
         let isPreviewMode = false;
 
+        const sampleHtml = "aaa bbb ccc ddd eee\n" +
+            "    \n" +
+            "  <div>aaa bbb ccc ddd eee</div><div><br></div><div>###  aaa bbb ccc ddd eee</div><div></div><div>####</div><div><br></div><div>aaa bbb ccc ddd eee</div>";
+
+        const actual = analyzeHtml(sampleHtml);
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                console.error('Assertion failed:' + message + '\n' +
+                    'Expected:' + expected + '\n' +
+                    'Actual:', actual);
+            } else {
+                console.log('Assertion passed:', message);
+            }
+        }
+
+        assertEqual(actual[0], 'aaa bbb ccc ddd eee\n    \n  ', "Line 1");
+        assertEqual(actual[1], `aaa bbb ccc ddd eee`, "Line 2");
+        assertEqual(actual[2], "⹉", "Line 3 (empty line)");
+        assertEqual(actual[3], "###  aaa bbb ccc ddd eee", "Line 4");
+        assertEqual(actual[4], "####", "Line 5 (header only)");
+        assertEqual(actual[5], "⹉", "Line 6 (empty line)");
+        assertEqual(actual[6], "aaa bbb ccc ddd eee", "Line 7");
+
         // Selection range utilities for contenteditable elements (precision enhanced version)
         function getContentEditableSelection(element) {
             const selection = window.getSelection();
@@ -379,23 +403,37 @@
             return 0;
         }
 
-        function selectLineNumberAndCharIndex(sources, beginCharIndex, endCharIndex) {
+        function selectLineNumberAndCharIndex(beginEndLenStrings, beginCharIndex, endCharIndex) {
             let retBeginLine = 0, retBeginCharIndex = 0;
             let retEndLine = 0, retEndCharIndex = 0;
-            for (let i = 0; i < sources.length; i++) {
-                const line = sources[i];
+            let emptyLineCount = 0;
+
+            for (let i = 0; i < beginEndLenStrings.length; i++) {
+                const line = beginEndLenStrings[i];
+
+                if (line.str === "⹉") {
+                    emptyLineCount++;
+                }
+
                 if (beginCharIndex >= line.begin && beginCharIndex <= line.end) {
                     retBeginLine = i;
-                    retBeginCharIndex = beginCharIndex - line.begin;
+                    retBeginCharIndex = beginCharIndex - line.begin + emptyLineCount;
                     break;
                 }
             }
 
-            for (let i = 0; i < sources.length; i++) {
-                const line = sources[i];
+            emptyLineCount = 0;
+
+            for (let i = 0; i < beginEndLenStrings.length; i++) {
+                const line = beginEndLenStrings[i];
+
+                if (line.str === "⹉") {
+                    emptyLineCount++;
+                }
+
                 if (endCharIndex >= line.begin && endCharIndex <= line.end) {
                     retEndLine = i;
-                    retEndCharIndex = endCharIndex - line.begin;
+                    retEndCharIndex = endCharIndex - line.begin + emptyLineCount;
                     break;
                 }
             }
@@ -404,7 +442,6 @@
         }
 
         function replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after) {
-
             let newLines = [];
             for (let i = 0; i < beginEndLenStrings.length; i++) {
                 const line = beginEndLenStrings[i];
@@ -432,6 +469,25 @@
             return newLines;
         }
 
+        function replaceLine(beginEndLenStrings, selectedLine, before, after) {
+
+            let newLines = [];
+            for (let i = 0; i < beginEndLenStrings.length; i++) {
+                const line = beginEndLenStrings[i];
+                if (i === selectedLine) {
+                    let addingSpace = "";
+                    if (!line.str.startsWith(" ")) {
+                        addingSpace += " ";
+                    }
+                    newLines.push(before + addingSpace + line.str + after);
+                } else {
+                    newLines.push(line.str);
+                }
+            }
+
+            return newLines;
+        }
+
         function convertToInnerHtml(newLines) {
             let html = "";
             for (let i = 0; i < newLines.length; i++) {
@@ -439,13 +495,119 @@
                     html += newLines[i];
                 } else {
                     let insert = newLines[i];
-                    if (insert === "") {
-                        insert = "<br>";
+                    if (insert.includes("⹉")) {
+                        insert = insert.split("⹉").join("<br>");
                     }
                     html += "<div>" + insert + "</div>";
                 }
             }
             return html;
+        }
+
+        function getCurrentLineIndex(beginEndLenStrings) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) {
+                return null;
+            }
+
+            const range = selection.getRangeAt(0);
+
+            if (!range.collapsed) {
+                return null;
+            }
+
+            const beforeCursorText = getTextBeforeCursor(range.startContainer, range.startOffset, beginEndLenStrings);
+            const beforeCursorTextLength = beforeCursorText.length;
+            let selectedLine = -1;
+            for (let i = 0; i < beginEndLenStrings.length; i++) {
+                const line = beginEndLenStrings[i];
+                if (line.begin <= beforeCursorTextLength && beforeCursorTextLength <= line.end) {
+                    selectedLine = i;
+                    break;
+                }
+            }
+            return {
+                line: selectedLine
+            };
+        }
+
+        function getTextBeforeCursor(container, offset, beginEndLenStrings) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return '';
+
+            const range = selection.getRangeAt(0);
+            const textarea = document.getElementById('editor_content');
+
+            try {
+                // 全テキストとカーソル位置を取得
+                const fullText = textarea.innerText || '';
+                const text = getCursorPositionInInnerText(textarea, range.startContainer, range.startOffset);
+                return text;
+            } catch (error) {
+                console.error('Error in getTextBeforeCursor:', error);
+                return '';
+            }
+        }
+
+        function getCursorPositionInInnerText(container, cursorNode, cursorOffset) {
+            try {
+                const beforeRange = document.createRange();
+                beforeRange.setStart(container, 0);
+                beforeRange.setEnd(cursorNode, cursorOffset);
+
+                // cloneContentsを使用してDOM構造を保持
+                const fragment = beforeRange.cloneContents();
+                const tempDiv = document.createElement('div');
+                tempDiv.appendChild(fragment);
+
+                // innerTextで正確な文字数を取得（空行も含む）
+                const r = analyzeHtml(tempDiv.innerHTML.replace('\n    \n  ', ''), true).join('');
+                return r;
+
+            } catch (error) {
+                console.error('Position calculation failed:', error);
+                return 0;
+            }
+        }
+
+        function analyzeHtml(target, isCountEmptyDiv = false) {
+            let lines = [];
+            let remain = target;
+            let firstDivFound = false;
+            while (remain.length > 0) {
+                let idx = remain.indexOf("<");
+                if (idx >= 0 && remain.substring(idx, idx + 5) === "<div>") {
+                    if (!firstDivFound) {
+                        lines.push(remain.substring(0, idx));
+                        firstDivFound = true;
+                    }
+                    if (remain.startsWith("<div></div>")) {
+                        if (isCountEmptyDiv) {
+                            lines.push("⹉");
+                        }
+                        remain = remain.substring(11);
+                        continue;
+                    }
+                    if (remain.match(/^<div>((?:(?!<br>|<div>|<\/div>).)+?)<br><\/div>/)) {
+                        const match = remain.match(/^<div>((?:(?!<br>|<div>|<\/div>).)+?)<br><\/div>/);
+                        lines.push(match[1]);
+                        remain = remain.substring(match[0].length);
+                        continue;
+                    }
+                    remain = remain.substring(idx + 5);
+                } else if (idx >= 0 && remain.substring(idx, idx + 4) === "<br>") {
+                    lines.push("⹉");
+                    remain = remain.substring(idx + 4);
+                } else if (idx >= 0 && remain.substring(idx, idx + 6) === "</div>") {
+                    if (idx > 0) {
+                        lines.push(remain.substring(0, idx));
+                    }
+                    remain = remain.substring(idx + 6);
+                } else {
+                    remain = "";
+                }
+            }
+            return lines;
         }
 
         // Markdown text insertion functionality
@@ -462,51 +624,22 @@
                 const isContentEditable = textarea.contentEditable === 'true' ||
                     textarea.getAttribute('contenteditable') === 'true';
 
-                let remain = textarea.innerHTML;
-                let lines = [];
-                let firstDivFound = false;
-                while (remain.length > 0)
-                {
-                    let idx = remain.indexOf("<");
-                    if (idx >= 0 && remain.substring(idx, idx + 5) === "<div>")
-                    {
-                        if (!firstDivFound) {
-                            lines.push(remain.substring(0, idx));
-                            firstDivFound = true;
-                        }
-                        remain = remain.substring(idx + 5);
-                    }
-                    else if (idx >= 0 && remain.substring(idx, idx + 4) === "<br>")
-                    {
-                        lines.push("");
-                        remain = remain.substring(idx + 4);
-                    }
-                    else if (idx >= 0 && remain.substring(idx, idx + 6) === "</div>")
-                    {
-                        if (idx > 0) {
-                            lines.push(remain.substring(0, idx));
-                        }
-                        remain = remain.substring(idx + 6);
-                    }
-                    else
-                    {
-                        // lines.push(remain);
-                        remain = "";
-                    }
-                }
-
-                //↑↑ここまで完成！↑↑
-                //↓↓ここから未完成↓↓
+                let lines = analyzeHtml(textarea.innerHTML.replace('\n    \n  ', ''));
 
                 let offset = 0;
                 let beginEndLenStrings = [];
+                let emptyLineCount = 0;
                 for (let i = 0; i < lines.length; i++) {
                     let line = lines[i];
+                    if (line === "⹉") {
+                        emptyLineCount++;
+                    }
                     beginEndLenStrings.push({
                         begin: offset,
                         end: offset + line.length,
                         len: line.length,
-                        str: line
+                        str: line,
+                        emptyLineCount: emptyLineCount
                     });
                     offset += line.length;
                 }
@@ -514,8 +647,13 @@
                 //選択範囲の取得
                 const selection = window.getSelection();
 
+                let selectLineMode = false;
+                let selectedLinePos;
+
                 if (!selection.rangeCount || selection.isCollapsed) {
-                    return;
+                    //行選択モード
+                    selectLineMode = true;
+                    selectedLinePos = getCurrentLineIndex(beginEndLenStrings);
                 }
 
                 const range = selection.getRangeAt(0);
@@ -535,7 +673,9 @@
 
                 const targetTextPosition = selectLineNumberAndCharIndex(beginEndLenStrings, startOffset, endOffset);
 
-                const newLines = replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after);
+                const newLines = !selectLineMode
+                    ? replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after)
+                    : replaceLine(beginEndLenStrings, selectedLinePos.line, before, after);
 
                 const newFullHTML = convertToInnerHtml(newLines);
 
@@ -546,9 +686,9 @@
                 }
 
                 // Adjust cursor position
-                const newCursorPos = selectedText.length > 0 ?
-                    start + before.length + selectedText.length + after.length :
-                    start + before.length;
+                const newCursorPos = selectedTextContent.length > 0 ?
+                    startOffset + before.length + selectedTextContent.length + after.length + 1 :
+                    startOffset + before.length + 1;
 
                 textarea.focus();
 
