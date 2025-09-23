@@ -492,7 +492,7 @@
             let html = "";
             for (let i = 0; i < newLines.length; i++) {
                 if (i === 0) {
-                    html += newLines[i];
+                    html += newLines[i].split("⹉").join("");
                 } else {
                     let insert = newLines[i];
                     if (insert === "⹉") {
@@ -582,6 +582,8 @@
                     if (!firstDivFound) {
                         lines.push(remain.substring(0, idx));
                         firstDivFound = true;
+                        remain = remain.substring(idx);
+                        continue;
                     }
                     if (remain.startsWith("<div></div>")) {
                         if (isCountEmptyDiv) {
@@ -644,6 +646,18 @@
                         emptyLineCount: emptyLineCount
                     });
                     offset += line.length;
+                }
+
+                //beginEndLenStrings から　len:0 のものを削除
+                beginEndLenStrings = beginEndLenStrings.filter(line => line.len > 0 || line.str === "⹉");
+                if (beginEndLenStrings.length === 0) {
+                    beginEndLenStrings.push({
+                        begin: 0,
+                        end: 1,
+                        len: 1,
+                        str: "⹉",
+                        emptyLineCount: 1
+                    });
                 }
 
                 //選択範囲の取得
