@@ -495,8 +495,10 @@
                     html += newLines[i];
                 } else {
                     let insert = newLines[i];
-                    if (insert.includes("⹉")) {
+                    if (insert === "⹉") {
                         insert = insert.split("⹉").join("<br>");
+                    } else {
+                        insert = insert.split("⹉").join("");
                     }
                     html += "<div>" + insert + "</div>";
                 }
