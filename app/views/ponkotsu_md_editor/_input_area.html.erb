@@ -8,7 +8,7 @@
        contenteditable="true"
        data-field="content"
        class="form-control markdown-textarea">
-    <%= raw locals[:content] %>
+    <%= h(locals[:content]) %>
   </div>
 
   <div id="editor_content_placeholder">
