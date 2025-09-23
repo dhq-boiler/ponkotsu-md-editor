@@ -22,10 +22,11 @@ module PonkotsuMdEditor
     #         tools: [:bold, :italic, :strikethrough],
     #         placeholder: "This is Placeholder."
     #       }) %>
-    def markdown_editor(form, attribute, options = {})
+    def markdown_editor(form, attribute, content, options = {})
       form = form[:form] if form.is_a?(Hash)
       attribute = attribute[:attribute] if attribute.is_a?(Hash)
-      render "ponkotsu_md_editor/editor", locals: { attribute: attribute, form: form, options: options }
+      content = content[:attribute] if content.is_a?(Hash)
+      render "ponkotsu_md_editor/editor", locals: { attribute: attribute, content: content, form: form, options: options }
     end
   end
 end
