@@ -774,21 +774,55 @@
 
                 if (isContentEditable) {
                     textarea.innerHTML = newFullHTML;
-                } else {
-                    textarea.value = newFullHTML;
-                }
+                    textarea.focus();
 
-                // Adjust cursor position
-                const newCursorPos = selectedTextContent.length > 0 ?
-                    startOffset + before.length + selectedTextContent.length + after.length :
-                    startOffset + before.length;
+                    // 挿入されたテキストノードを直接探してカーソルを設定
+                    const insertedText = selectedTextContent.length > 0 ?
+                        (before + selectedTextContent + after) :
+                        (before + after);
 
-                textarea.focus();
+                    // 新しく挿入されたテキストの終端を探す
+                    const walker = document.createTreeWalker(
+                        textarea,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    );
 
-                if (isContentEditable) {
-                    setContentEditableSelection(textarea, newCursorPos, newCursorPos);
-                } else if (textarea.setSelectionRange) {
-                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+                    let foundNode = null;
+                    let foundOffset = 0;
+                    let node;
+
+                    while (node = walker.nextNode()) {
+                        if (node.textContent.includes(insertedText)) {
+                            // 挿入されたテキストを含むノードを発見
+                            const textIndex = node.textContent.indexOf(insertedText);
+                            if (textIndex !== -1) {
+                                foundNode = node;
+                                foundOffset = textIndex + insertedText.length;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (foundNode) {
+                        // 見つかったテキストノード内にカーソルを設定
+                        const range = document.createRange();
+                        range.setStart(foundNode, Math.min(foundOffset, foundNode.textContent.length));
+                        range.collapse(true);
+
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } else {
+                        // フォールバック: 従来の方法
+                        const newDomText = buildDomBasedText(textarea);
+                        const targetPosition = Math.min(
+                            startOffset + insertedText.length,
+                            newDomText.length
+                        );
+                        setContentEditableSelection(textarea, targetPosition, targetPosition);
+                    }
                 }
 
                 // Fire input event
@@ -798,6 +832,19 @@
                 console.error('Error inserting markdown:', e);
             }
         };
+
+        function buildDomBasedText(element) {
+            const lines = analyzeHtml(element.innerHTML);
+            let domText = '';
+            for (let line of lines) {
+                if (line === "⹉") {
+                    domText += '\n';
+                } else {
+                    domText += line;
+                }
+            }
+            return domText;
+        }
 
         window.insertCode = function() {
             const textarea = document.getElementById('editor_content');
