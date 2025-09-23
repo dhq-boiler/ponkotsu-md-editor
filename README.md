@@ -1,39 +1,75 @@
-# Ponkotsu::Md::Editor
+# PonkotsuMdEditor
 
-TODO: Delete this and the text below, and describe your gem
+PonkotsuMdEditorは、Railsアプリケーション向けのシンプルなMarkdownエディタGemです。
+Markdownテキストベースの編集エリア、プレビュー、ツールバーなどを備え、簡単に組み込むことができます。
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ponkotsu/md/editor`. To experiment with that code, run `bin/console` for an interactive prompt.
+## 特徴
+- シンプルなUIで直感的にMarkdown編集
+- プレビュー機能付き
+- JavaScript/CSSアセット同梱
+- Railsビューに簡単組み込み
+- textareaタグを使用していないので、Chromium系ブラウザにおける多量のテキスト入力でのパフォーマンス問題を回避（参照：https://issues.chromium.org/issues/341564372）
 
-## Installation
+## インストール
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Gemfileに以下を追加してください。
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem 'ponkotsu-md-editor'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+その後、以下を実行します。
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
 ```
 
-## Usage
+## アセットについて
 
-TODO: Write usage instructions here
+本GemはRailsエンジンとしてアセット（JavaScript/CSS）を自動でプリコンパイル・ロードします。
+特別な設定や`application.js`/`application.css`へのrequire追加は不要です。
 
-## Development
+**本番環境やプリコンパイルが必要な環境では、以下のコマンドを実行してください。**
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+rails assets:precompile
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+## 使い方
 
-## Contributing
+### ビューへの組み込み例（ERB）
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/ponkotsu-md-editor.
+```erb
+<%= form_with model: @article, local: true, multipart: true, class: "article-form" do |form| %>
 
-## License
+    <%= markdown_editor(form, :content, @article.content, options: {
+        lang: :ja,
+        preview: true,
+        tools: %w[bold italic strikethrough heading1 heading2 heading3 heading4 heading5 heading6 unordered_list ordered_list check_list blockquote link image code code_block table horizontal_rule]
+      }) %>
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+<% end %>
+```
+
+### コントローラでのパラメータ受け取り
+
+hiddenフィールドにMarkdownテキストが格納されます。あとは良しなに。
+
+```ruby
+params[:model][:content] # => Markdownテキスト
+```
+
+## 開発・テスト
+
+このgemは主にRailsのview要素（ヘルパー、パーシャル、JS/CSSアセット）を提供するため、RSpec等の通常のテストではUIや動作の自動テストは困難です。
+
+- UIやエディタの動作確認には、手動テストを推奨します。
+
+## コントリビュート
+
+バグ報告・プルリクエストは歓迎します。
+GitHubリポジトリ: https://github.com/dhq-boiler/ponkotsu-md-editor
+
+## ライセンス
+
+このGemは[MITライセンス](https://opensource.org/licenses/MIT)のもとで公開されています。
