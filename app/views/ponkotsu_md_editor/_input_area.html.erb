@@ -8,7 +8,12 @@
        contenteditable="true"
        data-field="content"
        class="form-control markdown-textarea">
-    <%= h(locals[:content]) %>
+    <%
+      def crlf_to_br(text)
+        text.gsub(/\r\n|\r|\n/, "<br>").html_safe
+      end
+    %>
+    <%= crlf_to_br(h(locals[:content])) %>
   </div>
 
   <div id="editor_content_placeholder">
