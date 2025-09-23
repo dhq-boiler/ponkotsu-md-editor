@@ -4,6 +4,7 @@ PonkotsuMdEditorは、Railsアプリケーション向けのシンプルなMarkd
 
 PonkotsuMdEditor is a simple Markdown editor gem for Rails applications.
 
+
 Markdownテキストベースの編集エリア、プレビュー、ツールバーなどを備え、簡単に組み込むことができます。
 
 It provides a markdown text-based editing area, preview, toolbar, and can be easily integrated into your app.
@@ -44,9 +45,11 @@ bundle install
 
 This gem automatically precompiles and loads assets (JavaScript/CSS) as a Rails engine.
 
+
 特別な設定や`application.js`/`application.css`へのrequire追加は不要です。
 
 No special settings or require statements in `application.js`/`application.css` are needed.
+
 
 **本番環境やプリコンパイルが必要な環境では、以下のコマンドを実行してください。**
 
@@ -88,6 +91,7 @@ params[:model][:content] # => Markdown text
 
 This gem mainly provides Rails view elements (helpers, partials, JS/CSS assets), so UI and behavior cannot be automatically tested with standard RSpec, etc.
 
+
 - UIやエディタの動作確認には、手動テストを推奨します。
   - For UI/editor behavior, manual testing is recommended.
 
@@ -96,6 +100,7 @@ This gem mainly provides Rails view elements (helpers, partials, JS/CSS assets),
 バグ報告・プルリクエストは歓迎します。
 
 Bug reports and pull requests are welcome.
+
 
 GitHub repository: https://github.com/dhq-boiler/ponkotsu-md-editor
 
