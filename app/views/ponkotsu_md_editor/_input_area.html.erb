@@ -1,6 +1,5 @@
 <%
   _form = locals[:form]
-  _content = locals[:content]
   _placeholder = locals[:options][:placeholder]
 %>
 
@@ -9,14 +8,14 @@
        contenteditable="true"
        data-field="content"
        class="form-control markdown-textarea">
-    <%= raw _content %>
+    <%= raw locals[:attribute] %>
   </div>
 
   <div id="editor_content_placeholder">
     <%= _placeholder %>
   </div>
 
-  <%= _form.hidden_field _content, id: "content_hidden_field" %>
+  <%= _form.hidden_field locals[:attribute], id: "content_hidden_field" %>
 
   <%= render "ponkotsu_md_editor/preview_area" %>
 </div>

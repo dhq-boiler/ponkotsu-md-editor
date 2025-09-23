@@ -1,6 +1,5 @@
 <%
   _form = locals[:form]
-  _content = locals[:content]
   _options = {
     lang: locals[:options][:lang] || :en,
     preview: locals[:options][:preview] || true,
@@ -60,7 +59,7 @@
 
 <div class="markdown-editor">
   <%= render "ponkotsu_md_editor/toolbar", locals: { options: _options } %>
-  <%= render "ponkotsu_md_editor/input_area", locals: { form: _form, content: _content, options: _options } %>
+  <%= render "ponkotsu_md_editor/input_area", locals: { form: _form, attribute: locals[:attribute], options: _options } %>
 </div>
 <div class="form-text medium-contrast-text">
   <strong><%= case _options[:lang]
