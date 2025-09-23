@@ -15,6 +15,19 @@
     function onReady(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback);
+
+            const textarea = document.getElementById('editor_content');
+            const hiddenField = document.getElementById('content_hidden_field');
+
+            if (textarea && hiddenField) {
+                const syncToHidden = () => {
+                    hiddenField.value = textarea.innerText || '';
+                };
+                textarea.addEventListener('input', syncToHidden);
+                textarea.addEventListener('blur', syncToHidden);
+                // 初期化時にも同期
+                syncToHidden();
+            }
         } else {
             callback();
         }
