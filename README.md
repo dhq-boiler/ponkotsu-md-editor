@@ -1,4 +1,4 @@
-# PonkotsuMdEditor
+# ponkotsu-md-editor
 
 [![Gem Version](https://badge.fury.io/rb/ponkotsu-md-editor.svg)](https://badge.fury.io/rb/ponkotsu-md-editor)
 
