@@ -27,6 +27,23 @@
                 textarea.addEventListener('blur', syncToHidden);
                 // 初期化時にも同期
                 syncToHidden();
+
+                // 初期状態でプレースホルダを表示するための空要素チェック
+                function updatePlaceholderVisibility() {
+                    // <br>のみの場合も空とみなす
+                    if (textarea.innerHTML.trim() === '&nbsp;' || textarea.innerHTML.trim() === '' || textarea.innerHTML.trim() === '\<br\>') {
+                        textarea.classList.add('empty');
+                    } else {
+                        textarea.classList.remove('empty');
+                    }
+                }
+
+                // 初期状態をチェック
+                updatePlaceholderVisibility();
+
+                // 入力時にプレースホルダの表示/非表示を制御
+                textarea.addEventListener('input', updatePlaceholderVisibility);
+                textarea.addEventListener('blur', updatePlaceholderVisibility);
             }
         } else {
             callback();
