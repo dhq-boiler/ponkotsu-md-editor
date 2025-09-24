@@ -1,5 +1,7 @@
 # PonkotsuMdEditor
 
+[![Gem Version](https://badge.fury.io/rb/ponkotsu-md-editor.svg)](https://badge.fury.io/rb/ponkotsu-md-editor)
+
 PonkotsuMdEditorは、Railsアプリケーション向けのシンプルなMarkdownエディタGemです。
 
 PonkotsuMdEditor is a simple Markdown editor gem for Rails applications.
