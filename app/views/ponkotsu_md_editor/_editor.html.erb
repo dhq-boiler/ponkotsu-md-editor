@@ -70,7 +70,7 @@
               else
                 "N/A"
               end %></strong>
-  <a href="#" data-bs-toggle="modal" data-bs-target="#markdownHelpModal" class="text-decoration-none" style="color: var(--accent-color);">
+  <a href="#" id="markdownHelpGuideLink" popovertarget="markdownHelpPopover" class="text-decoration-none" style="color: var(--accent-color);">
     <%= case _options[:lang]
         when :en
           "Writing Guide"
