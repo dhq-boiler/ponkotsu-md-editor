@@ -61,7 +61,7 @@
   <%= render "ponkotsu_md_editor/toolbar", locals: { options: _options } %>
   <%= render "ponkotsu_md_editor/input_area", locals: { form: _form, attribute: locals[:attribute], content: locals[:content], options: _options } %>
 </div>
-<div class="form-text medium-contrast-text">
+<div class="ponkotsu-md-editor-form-text ponkotsu-md-editor-medium-contrast-text">
   <strong><%= case _options[:lang]
               when :en
                 "You can write in Markdown."
@@ -70,7 +70,7 @@
               else
                 "N/A"
               end %></strong>
-  <a href="#" id="markdownHelpGuideLink" popovertarget="markdownHelpPopover" class="text-decoration-none" style="color: var(--accent-color);">
+  <a href="#" id="markdownHelpGuideLink" popovertarget="markdownHelpPopover" class="ponkotsu-md-editor-text-decoration-none" style="color: var(--accent-color);">
     <%= case _options[:lang]
         when :en
           "Writing Guide"

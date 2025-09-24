@@ -1,8 +1,9 @@
-
 @theme {
     --accent-color: #007bff; /* 例: ブルー */
     --accent-color-hover: #0056b3; /* 例: ダークブルー */
+    --accent-pink: #e83e8c; /* 追加: ピンク */
     --preview-bg: #363636; /* 例: ダークグレー */
+    --border-color: #444; /* 追加: プレビュー枠線色 */
     --text-primary: #ffffff; /* 例: ホワイト */
 }
 
@@ -40,3 +41,242 @@
 /*#editor_content:focus ~ #editor_content_placeholder {*/
 /*    display: none;*/
 /*}*/
+
+.ponkotsu-md-editor-form-text {
+  font-size: 0.875em;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+.ponkotsu-md-editor-medium-contrast-text {
+  color: #495057;
+}
+
+.ponkotsu-md-editor-text-decoration-none {
+  text-decoration: none;
+}
+
+.ponkotsu-md-editor-form-control {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  padding: 0.5em 0.75em;
+  font-size: 1em;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  box-sizing: border-box;
+}
+.ponkotsu-md-editor-form-control:focus {
+  outline: none;
+  border-color: var(--accent-color, #007bff);
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.ponkotsu-md-editor-markdown-textarea {
+  min-height: 240px;
+  resize: vertical;
+  font-family: inherit;
+  background: none;
+  box-shadow: none;
+}
+
+.ponkotsu-md-editor-popover-modal {
+  background: #222;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 20px #000a;
+  max-width: 900px;
+  width: 80vw;
+}
+.ponkotsu-md-editor-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #444;
+}
+.ponkotsu-md-editor-popover-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+.ponkotsu-md-editor-btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #fff;
+  cursor: pointer;
+}
+.ponkotsu-md-editor-popover-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.ponkotsu-md-editor-nav {
+  display: flex;
+  border-bottom: 1px solid #444;
+  margin-bottom: 1rem;
+  list-style: none;
+  padding-left: 0;
+}
+.ponkotsu-md-editor-nav-tabs .ponkotsu-md-editor-nav-link {
+  border: none;
+  background: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 0.375rem 0.375rem 0 0;
+  margin-right: 0.25rem;
+}
+.ponkotsu-md-editor-nav-link.active {
+  background: #333;
+  color: var(--accent-color, #007bff);
+  font-weight: bold;
+}
+.ponkotsu-md-editor-nav-fill {
+  flex: 1 1 auto;
+}
+.ponkotsu-md-editor-nav-item {
+  flex: 1 1 0;
+  text-align: center;
+}
+.ponkotsu-md-editor-tab-content {
+  margin-top: 1rem;
+}
+.ponkotsu-md-editor-tab-pane {
+  display: none;
+}
+.ponkotsu-md-editor-tab-pane.active,
+.ponkotsu-md-editor-tab-pane.show {
+  display: block;
+}
+.ponkotsu-md-editor-table-responsive {
+  overflow-x: auto;
+}
+.ponkotsu-md-editor-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  color: #fff;
+  background: #222;
+}
+.ponkotsu-md-editor-table th,
+.ponkotsu-md-editor-table td {
+  border: 1px solid #444;
+  padding: 0.5rem;
+}
+.ponkotsu-md-editor-table-dark {
+  background: #222;
+}
+.ponkotsu-md-editor-table-striped tbody tr:nth-child(odd) {
+  background: #2a2a2a;
+}
+.ponkotsu-md-editor-table-sm th,
+.ponkotsu-md-editor-table-sm td {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9em;
+}
+.ponkotsu-md-editor-table-bordered th,
+.ponkotsu-md-editor-table-bordered td {
+  border: 1px solid #666;
+}
+.ponkotsu-md-editor-alert {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  background: #e9f7fd;
+  color: #222;
+  border: 1px solid #b6e2f7;
+}
+.ponkotsu-md-editor-alert-info {
+  background: #e9f7fd;
+  color: #222;
+  border-color: #b6e2f7;
+}
+.ponkotsu-md-editor-mt-4 {
+  margin-top: 1.5rem;
+}
+.ponkotsu-md-editor-high-contrast-text {
+  color: #fff;
+  font-weight: bold;
+}
+
+.markdown-preview,
+.ponkotsu-md-editor-markdown-preview {
+  min-height: 500px;
+  padding: 1rem;
+  background-color: var(--preview-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  color: var(--text-primary);
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.ponkotsu-md-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.ponkotsu-md-editor-btn-group {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+.ponkotsu-md-editor-btn-group-sm > .ponkotsu-md-editor-btn {
+  font-size: 0.9em;
+  padding: 0.25em 0.5em;
+}
+.ponkotsu-md-editor-btn {
+  display: inline-block;
+  font-weight: 400;
+  color: #222;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  padding: 0.375rem 0.75rem;
+  font-size: 1em;
+  line-height: 1.5;
+  border-radius: 0.375rem;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  margin-right: 0.2em;
+  cursor: pointer;
+}
+.ponkotsu-md-editor-btn:last-child {
+  margin-right: 0;
+}
+.ponkotsu-md-editor-btn-outline {
+  background-color: #fff;
+  color: #222;
+  border: 1px solid #ced4da;
+}
+.ponkotsu-md-editor-btn-outline:hover,
+.ponkotsu-md-editor-btn-outline:focus {
+  background-color: #f0f0f0;
+  border-color: var(--accent-color, #007bff);
+  color: var(--accent-color, #007bff);
+}
+.ponkotsu-md-editor-btn-outline-primary {
+  background-color: #fff;
+  color: var(--accent-color, #007bff);
+  border: 1px solid var(--accent-color, #007bff);
+}
+.ponkotsu-md-editor-btn-outline-primary:hover,
+.ponkotsu-md-editor-btn-outline-primary:focus {
+  background-color: var(--accent-color, #007bff);
+  color: #fff;
+}
+.ponkotsu-md-editor-mb-2 {
+  margin-bottom: 0.5rem;
+}
+.ponkotsu-md-editor-ms-2 {
+  margin-left: 0.5rem;
+}
