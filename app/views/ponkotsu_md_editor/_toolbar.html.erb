@@ -1,4 +1,5 @@
 <%
+  lang = locals[:options][:lang] || :en
   enable_bold = locals[:options][:tools].include?('bold')
   enable_italic = locals[:options][:tools].include?('italic')
   enable_strikethrough = locals[:options][:tools].include?('strikethrough')
@@ -24,117 +25,212 @@
 <div class="editor-toolbar mb-2">
   <div class="btn-group btn-group-sm" role="group">
     <% if enable_bold %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-bold-btn" onclick="insertMarkdown('**', '**')" title="太字 (Ctrl+B)">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-bold-btn" onclick="insertMarkdown('**', '**')"
+            title="<%= case lang
+                       when :en then "Bold (Ctrl+B)"
+                       when :ja then "太字 (Ctrl+B)"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-bold"></i>
     </button>
     <% end %>
 
     <% if enable_italic %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-italic-btn" onclick="insertMarkdown('*', '*')" title="斜体 (Ctrl+I)">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-italic-btn" onclick="insertMarkdown('*', '*')"
+            title="<%= case lang
+                       when :en then "Italic (Ctrl+I)"
+                       when :ja then "斜体 (Ctrl+I)"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-italic"></i>
     </button>
     <% end %>
 
     <% if enable_strikethrough %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-strikethrough-btn" onclick="insertMarkdown('~~', '~~')" title="打ち消し線">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-strikethrough-btn" onclick="insertMarkdown('~~', '~~')"
+            title="<%= case lang
+                       when :en then "Strikethrough"
+                       when :ja then "打ち消し線"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-strikethrough"></i>
     </button>
     <% end %>
 
     <% if enable_code %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-btn" onclick="insertMarkdown('`', '`')" title="インラインコード">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-btn" onclick="insertMarkdown('`', '`')"
+            title="<%= case lang
+                       when :en then "Inline Code"
+                       when :ja then "インラインコード"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-code"></i>
     </button>
     <% end %>
   </div>
   <div class="btn-group btn-group-sm ms-2" role="group">
     <% if enable_heading1 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading1-btn" onclick="insertMarkdown('# ', '')" title="見出し1">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading1-btn" onclick="insertMarkdown('# ', '')"
+            title="<%= case lang
+                       when :en then "Heading 1"
+                       when :ja then "見出し1"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h1"></i>
     </button>
     <% end %>
 
     <% if enable_heading2 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading2-btn" onclick="insertMarkdown('## ', '')" title="見出し2">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading2-btn" onclick="insertMarkdown('## ', '')"
+            title="<%= case lang
+                       when :en then "Heading 2"
+                       when :ja then "見出し2"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h2"></i>
     </button>
     <% end %>
 
     <% if enable_heading3 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading3-btn" onclick="insertMarkdown('### ', '')" title="見出し3">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading3-btn" onclick="insertMarkdown('### ', '')"
+            title="<%= case lang
+                       when :en then "Heading 3"
+                       when :ja then "見出し3"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h3"></i>
     </button>
     <% end %>
 
     <% if enable_heading4 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading4-btn" onclick="insertMarkdown('#### ', '')" title="見出し4">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading4-btn" onclick="insertMarkdown('#### ', '')"
+            title="<%= case lang
+                       when :en then "Heading 4"
+                       when :ja then "見出し4"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h4"></i>
     </button>
     <% end %>
 
     <% if enable_heading5 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading5-btn" onclick="insertMarkdown('##### ', '')" title="見出し5">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading5-btn" onclick="insertMarkdown('##### ', '')"
+            title="<%= case lang
+                       when :en then "Heading 5"
+                       when :ja then "見出し5"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h5"></i>
     </button>
     <% end %>
 
     <% if enable_heading6 %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading6-btn" onclick="insertMarkdown('###### ', '')" title="見出し6">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-heading6-btn" onclick="insertMarkdown('###### ', '')"
+            title="<%= case lang
+                       when :en then "Heading 6"
+                       when :ja then "見出し6"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-type-h6"></i>
     </button>
     <% end %>
   </div>
   <div class="btn-group btn-group-sm ms-2" role="group">
     <% if enable_link %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-link-btn" onclick="insertMarkdown('[', '](URL)')" title="リンク">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-link-btn" onclick="insertMarkdown('[', '](URL)')"
+            title="<%= case lang
+                       when :en then "Link"
+                       when :ja then "リンク"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-link-45deg"></i>
     </button>
     <% end %>
 
     <% if enable_unordered_list %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-unordered-list-btn" onclick="insertMarkdown('- ', '')" title="箇条書きリスト">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-unordered-list-btn" onclick="insertMarkdown('- ', '')"
+            title="<%= case lang
+                       when :en then "Unordered List"
+                       when :ja then "箇条書きリスト"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-list-ul"></i>
     </button>
     <% end %>
 
     <% if enable_ordered_list %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-ordered-list-btn" onclick="insertMarkdown('1. ', '')" title="番号付きリスト">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-ordered-list-btn" onclick="insertMarkdown('1. ', '')"
+            title="<%= case lang
+                       when :en then "Ordered List"
+                       when :ja then "番号付きリスト"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-list-ol"></i>
     </button>
     <% end %>
 
     <% if enable_code_block %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-block-btn" onclick="insertCode()" title="コードスパンまたはコードブロック">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-code-block-btn" onclick="insertCode()"
+            title="<%= case lang
+                       when :en then "Code Block"
+                       when :ja then "コードブロック"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-code-square"></i>
     </button>
     <% end %>
 
     <% if enable_blockquote %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-blockquote-btn" onclick="insertMarkdown('> ', '')" title="引用">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-blockquote-btn" onclick="insertMarkdown('> ', '')"
+            title="<%= case lang
+                       when :en then "Blockquote"
+                       when :ja then "引用"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-quote"></i>
     </button>
     <% end %>
 
     <% if enable_image %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-image-btn" onclick="insertMarkdown('![', '](画像URL)')" title="画像">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-image-btn" onclick="insertMarkdown('![', '](画像URL)')"
+            title="<%= case lang
+                       when :en then "Image"
+                       when :ja then "画像"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-image"></i>
     </button>
     <% end %>
 
     <% if enable_table %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-table-btn" onclick="insertTable()" title="テーブル">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-table-btn" onclick="insertTable()"
+            title="<%= case lang
+                       when :en then "Table"
+                       when :ja then "表"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-table"></i>
     </button>
     <% end %>
 
     <% if enable_horizontal_rule %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-horizontal-rule-btn" onclick="insertMarkdown('\n---\n', '')" title="水平線">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-horizontal-rule-btn" onclick="insertMarkdown('\n---\n', '')"
+            title="<%= case lang
+                       when :en then "Horizontal Rule"
+                       when :ja then "水平線"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-dash-lg"></i>
     </button>
     <% end %>
 
     <% if enable_check_list %>
-    <button type="button" class="btn btn-outline-secondary" id="toolbar-check-list-btn" onclick="insertMarkdown('- [ ] ', '')" title="チェックボックス">
+    <button type="button" class="btn btn-outline-secondary" id="toolbar-check-list-btn" onclick="insertMarkdown('- [ ] ', '')"
+            title="<%= case lang
+                       when :en then "Check List"
+                       when :ja then "チェックリスト"
+                       else "N/A"
+                       end %>">
       <i class="bi bi-check-square"></i>
     </button>
     <% end %>
@@ -143,7 +239,12 @@
   <% if enable_preview %>
   <div class="btn-group btn-group-sm ms-2" role="group">
     <button type="button" class="btn btn-outline-primary" id="toolbar-preview-btn" onclick="togglePreview()">
-      <i class="bi bi-eye"></i> プレビュー
+      <i class="bi bi-eye"></i>
+      <span><%= case lang
+                when :en then "Preview"
+                when :ja then "プレビュー"
+                else "N/A"
+                end %></span>
     </button>
   </div>
   <% end %>
