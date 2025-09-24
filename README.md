@@ -2,7 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/ponkotsu-md-editor.svg)](https://badge.fury.io/rb/ponkotsu-md-editor)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/d4CEnTkM8Ek?si=6ZtNsgjjIcSKMEPr" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+https://github.com/user-attachments/assets/70ff077d-200b-4746-b057-4860a12d4dbb
 
 PonkotsuMdEditorは、Railsアプリケーション向けのシンプルなMarkdownエディタGemです。
 
