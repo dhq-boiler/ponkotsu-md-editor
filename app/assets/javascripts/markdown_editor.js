@@ -21,7 +21,7 @@
 
             if (textarea && hiddenField) {
                 const syncToHidden = () => {
-                    hiddenField.value = textarea.innerText || '';
+                    hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
                 };
                 textarea.addEventListener('input', syncToHidden);
                 textarea.addEventListener('blur', syncToHidden);
