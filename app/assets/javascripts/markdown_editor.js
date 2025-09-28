@@ -61,17 +61,40 @@
         let isPreviewMode = false;
 
         // カレット位置保存用変数
-        let caretPosition = 0;
+        let caretPosition = { start: 0, end: 0 };
 
         // 外部から取得できるgetter関数
         window.getCaretPosition = function() {
-            return caretPosition;
+            return { start: caretPosition.start, end: caretPosition.end };
         };
 
         // カレット位置保存イベント
         if (textarea) {
             const saveCaretPosition = () => {
-                caretPosition = textarea.selectionStart;
+                if (textarea.isContentEditable || textarea.getAttribute('contenteditable') === 'true') {
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        // start位置
+                        const beforeStartRange = document.createRange();
+                        beforeStartRange.selectNodeContents(textarea);
+                        beforeStartRange.setEnd(range.startContainer, range.startOffset);
+                        const startPos = beforeStartRange.toString().length;
+                        // end位置
+                        const beforeEndRange = document.createRange();
+                        beforeEndRange.selectNodeContents(textarea);
+                        beforeEndRange.setEnd(range.endContainer, range.endOffset);
+                        const endPos = beforeEndRange.toString().length;
+                        caretPosition.start = startPos;
+                        caretPosition.end = endPos;
+                    } else {
+                        caretPosition.start = 0;
+                        caretPosition.end = 0;
+                    }
+                } else {
+                    caretPosition.start = textarea.selectionStart;
+                    caretPosition.end = textarea.selectionEnd;
+                }
             };
             textarea.addEventListener('input', saveCaretPosition);
             textarea.addEventListener('keyup', saveCaretPosition);
