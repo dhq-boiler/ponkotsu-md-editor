@@ -86,18 +86,25 @@
                         beforeEndRange.setEnd(range.endContainer, range.endOffset);
                         let endPos = beforeEndRange.toString().length;
 
-                        // <br>タグと改行（\n）の数をstart/endそれぞれでカウント
-                        const htmlUpToStart = textarea.innerHTML.substring(0, startPos);
-                        const brCountStart = (htmlUpToStart.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
-                        const textUpToStart = textarea.innerText.substring(0, startPos);
-                        const nlCountStart = (textUpToStart.match(/\n/g) || []).length;
-                        startPos += brCountStart + nlCountStart;
-
-                        const htmlUpToEnd = textarea.innerHTML.substring(0, endPos);
-                        const brCountEnd = (htmlUpToEnd.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
-                        const textUpToEnd = textarea.innerText.substring(0, endPos);
-                        const nlCountEnd = (textUpToEnd.match(/\n/g) || []).length;
-                        endPos += brCountEnd + nlCountEnd;
+                        // --- 再スキャンで<br>と改行の取りこぼしを防ぐ ---
+                        function scanOffset(pos) {
+                            let offset = pos;
+                            let lastAdded = -1;
+                            while (true) {
+                                const htmlUpTo = textarea.innerHTML.substring(0, offset);
+                                const brCount = (htmlUpTo.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
+                                const textUpTo = textarea.innerText.substring(0, offset);
+                                const nlCount = (textUpTo.match(/\n/g) || []).length;
+                                const added = brCount + nlCount;
+                                if (added === lastAdded) break;
+                                offset = pos + added;
+                                lastAdded = added;
+                            }
+                            return offset;
+                        }
+                        startPos = scanOffset(startPos);
+                        endPos = scanOffset(endPos);
+                        // -----------------------------------
 
                         caretPosition.start = startPos;
                         caretPosition.end = endPos;
