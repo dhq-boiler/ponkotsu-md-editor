@@ -79,12 +79,26 @@
                         const beforeStartRange = document.createRange();
                         beforeStartRange.selectNodeContents(textarea);
                         beforeStartRange.setEnd(range.startContainer, range.startOffset);
-                        const startPos = beforeStartRange.toString().length;
+                        let startPos = beforeStartRange.toString().length;
                         // end位置
                         const beforeEndRange = document.createRange();
                         beforeEndRange.selectNodeContents(textarea);
                         beforeEndRange.setEnd(range.endContainer, range.endOffset);
-                        const endPos = beforeEndRange.toString().length;
+                        let endPos = beforeEndRange.toString().length;
+
+                        // <br>タグと改行（\n）の数をstart/endそれぞれでカウント
+                        const htmlUpToStart = textarea.innerHTML.substring(0, startPos);
+                        const brCountStart = (htmlUpToStart.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
+                        const textUpToStart = textarea.innerText.substring(0, startPos);
+                        const nlCountStart = (textUpToStart.match(/\n/g) || []).length;
+                        startPos += brCountStart + nlCountStart;
+
+                        const htmlUpToEnd = textarea.innerHTML.substring(0, endPos);
+                        const brCountEnd = (htmlUpToEnd.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
+                        const textUpToEnd = textarea.innerText.substring(0, endPos);
+                        const nlCountEnd = (textUpToEnd.match(/\n/g) || []).length;
+                        endPos += brCountEnd + nlCountEnd;
+
                         caretPosition.start = startPos;
                         caretPosition.end = endPos;
                     } else {
