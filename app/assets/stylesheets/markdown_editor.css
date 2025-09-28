@@ -55,7 +55,7 @@
 
 #editor_content {
     position: relative;
-    overflow: hidden;
+    overflow: auto;
     height: calc(24 * 20px);
 }
 
@@ -123,7 +123,6 @@
   font-family: inherit;
   background: none;
   box-shadow: none;
-  overflow: auto;
 }
 
 .ponkotsu-md-editor-popover-modal {
