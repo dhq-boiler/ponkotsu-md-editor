@@ -60,6 +60,24 @@
 
         let isPreviewMode = false;
 
+        // カレット位置保存用変数
+        let caretPosition = 0;
+
+        // 外部から取得できるgetter関数
+        window.getCaretPosition = function() {
+            return caretPosition;
+        };
+
+        // カレット位置保存イベント
+        if (textarea) {
+            const saveCaretPosition = () => {
+                caretPosition = textarea.selectionStart;
+            };
+            textarea.addEventListener('input', saveCaretPosition);
+            textarea.addEventListener('keyup', saveCaretPosition);
+            textarea.addEventListener('click', saveCaretPosition);
+        }
+
         const sampleHtml = "aaa bbb ccc ddd eee\n" +
             "    \n" +
             "  <div>aaa bbb ccc ddd eee</div><div><br></div><div>###  aaa bbb ccc ddd eee</div><div></div><div>####</div><div><br></div><div>aaa bbb ccc ddd eee</div>";
