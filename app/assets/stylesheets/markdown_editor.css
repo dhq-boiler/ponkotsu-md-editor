@@ -123,6 +123,7 @@
   font-family: inherit;
   background: none;
   box-shadow: none;
+  overflow: auto;
 }
 
 .ponkotsu-md-editor-popover-modal {
