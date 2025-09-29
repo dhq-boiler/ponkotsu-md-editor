@@ -1,6 +1,19 @@
 (function() {
     'use strict';
 
+    // Debounce function for delayed execution
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
     // Safe DOM element retrieval
     function getElement(selector) {
         try {
@@ -23,7 +36,7 @@
                 const syncToHidden = () => {
                     hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
                 };
-                textarea.addEventListener('input', syncToHidden);
+                textarea.addEventListener('input', debounce(syncToHidden, 150));
                 textarea.addEventListener('blur', syncToHidden);
                 // 初期化時にも同期
                 syncToHidden();
@@ -42,7 +55,7 @@
                 updatePlaceholderVisibility();
 
                 // 入力時にプレースホルダの表示/非表示を制御
-                textarea.addEventListener('input', updatePlaceholderVisibility);
+                textarea.addEventListener('input', debounce(updatePlaceholderVisibility, 150));
                 textarea.addEventListener('blur', updatePlaceholderVisibility);
             }
         } else {
@@ -117,7 +130,7 @@
                     caretPosition.end = textarea.selectionEnd;
                 }
             };
-            textarea.addEventListener('input', saveCaretPosition);
+            textarea.addEventListener('input', debounce(saveCaretPosition, 100));
             textarea.addEventListener('keyup', saveCaretPosition);
             textarea.addEventListener('click', saveCaretPosition);
         }
@@ -1973,19 +1986,6 @@
                 // Fire change event for Rails form validation
                 textarea.dispatchEvent(new Event('change', { bubbles: true }));
             }
-        }
-
-        // Debounce function for delayed execution
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
         }
 
         // Keyboard shortcuts
