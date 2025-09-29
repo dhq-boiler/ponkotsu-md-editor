@@ -99,20 +99,44 @@
                         beforeEndRange.setEnd(range.endContainer, range.endOffset);
                         let endPos = beforeEndRange.toString().length;
 
-                        // --- 再スキャンで<br>と改行の取りこぼしを防ぐ ---
                         function scanOffset(pos) {
+                            // キャッシュを追加
+                            if (this._scanOffsetCache && this._scanOffsetCache.pos === pos) {
+                                return this._scanOffsetCache.result;
+                            }
+
+                            // HTML全体を一度だけ取得（これは良い改善）
+                            const fullHTML = textarea.innerHTML;
+                            const fullText = textarea.innerText;
+
                             let offset = pos;
                             let lastAdded = -1;
-                            while (true) {
-                                const htmlUpTo = textarea.innerHTML.substring(0, offset);
+                            let iterations = 0;
+                            const MAX_ITERATIONS = 100; // より安全な上限
+
+                            while (iterations < MAX_ITERATIONS) {
+                                const htmlUpTo = fullHTML.substring(0, offset);
+                                const textUpTo = fullText.substring(0, offset);
+
+                                // 元の正規表現を維持（安全性優先）
                                 const brCount = (htmlUpTo.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
-                                const textUpTo = textarea.innerText.substring(0, offset);
                                 const nlCount = (textUpTo.match(/\n/g) || []).length;
+
                                 const added = brCount + nlCount;
                                 if (added === lastAdded) break;
+
                                 offset = pos + added;
                                 lastAdded = added;
+                                iterations++;
                             }
+
+                            if (iterations >= MAX_ITERATIONS) {
+                                console.warn('scanOffset: Maximum iterations reached, possible infinite loop');
+                            }
+
+                            // 結果をキャッシュ
+                            this._scanOffsetCache = { pos: pos, result: offset };
+
                             return offset;
                         }
                         startPos = scanOffset(startPos);
