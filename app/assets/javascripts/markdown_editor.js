@@ -4,6 +4,8 @@
     // _scanOffsetCacheをローカル変数として閉じる
     let _scanOffsetCache = new Map();
 
+    const analyzeHtmlCache = new Map();
+
     // Debounce function for delayed execution
     function debounce(func, wait) {
         let timeout;
@@ -734,8 +736,6 @@
                 return 0;
             }
         }
-
-        const analyzeHtmlCache = new Map();
 
         function analyzeHtml(target, isCountEmptyDiv = false) {
 
