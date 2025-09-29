@@ -705,7 +705,16 @@
             }
         }
 
+        const analyzeHtmlCache = new Map();
+
         function analyzeHtml(target, isCountEmptyDiv = false) {
+
+            const cacheKey = `${target}_${isCountEmptyDiv}`;
+
+            if (analyzeHtmlCache.has(cacheKey)) {
+                return analyzeHtmlCache.get(cacheKey);
+            }
+
             let lines = [];
             let remain = target;
 
@@ -771,6 +780,12 @@
                 }
             }
 
+            if (analyzeHtmlCache.size > 100) {
+                const firstKey = analyzeHtmlCache.keys().next().value;
+                analyzeHtmlCache.delete(firstKey);
+            }
+
+            analyzeHtmlCache.set(cacheKey, lines);
             return lines;
         }
 
