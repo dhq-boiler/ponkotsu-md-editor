@@ -74,6 +74,8 @@
             return _scanOffsetCache.get(pos);
         }
 
+        const textarea = document.getElementById('editor_content');
+
         // HTML全体を一度だけ取得（これは良い改善）
         const fullHTML = textarea.innerHTML;
         const fullText = textarea.innerText;
