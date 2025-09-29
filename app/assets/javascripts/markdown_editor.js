@@ -1,6 +1,9 @@
 (function() {
     'use strict';
 
+    // _scanOffsetCacheをローカル変数として閉じる
+    let _scanOffsetCache = new Map();
+
     // Debounce function for delayed execution
     function debounce(func, wait) {
         let timeout;
@@ -63,6 +66,48 @@
         }
     }
 
+
+
+    function scanOffset(pos) {
+        // キャッシュ取得
+        if (_scanOffsetCache.has(pos)) {
+            return _scanOffsetCache.get(pos);
+        }
+
+        // HTML全体を一度だけ取得（これは良い改善）
+        const fullHTML = textarea.innerHTML;
+        const fullText = textarea.innerText;
+
+        let offset = pos;
+        let lastAdded = -1;
+        let iterations = 0;
+        const MAX_ITERATIONS = 100; // より安全な上限
+
+        while (iterations < MAX_ITERATIONS) {
+            const htmlUpTo = fullHTML.substring(0, offset);
+            const textUpTo = fullText.substring(0, offset);
+
+            // 元の正規表現を維持（安全性優先）
+            const brCount = (htmlUpTo.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
+            const nlCount = (textUpTo.match(/\n/g) || []).length;
+
+            const added = brCount + nlCount;
+            if (added === lastAdded) break;
+
+            offset = pos + added;
+            lastAdded = added;
+            iterations++;
+        }
+
+        if (iterations >= MAX_ITERATIONS) {
+            console.warn('scanOffset: Maximum iterations reached, possible infinite loop');
+        }
+
+        // 結果をキャッシュ
+        _scanOffsetCache.set(pos, offset);
+        return offset;
+    }
+
     onReady(function() {
         console.log('Enhanced Markdown editor initializing...');
 
@@ -98,47 +143,6 @@
                         beforeEndRange.selectNodeContents(textarea);
                         beforeEndRange.setEnd(range.endContainer, range.endOffset);
                         let endPos = beforeEndRange.toString().length;
-
-                        function scanOffset(pos) {
-                            // キャッシュを追加
-                            if (this._scanOffsetCache && this._scanOffsetCache.pos === pos) {
-                                return this._scanOffsetCache.result;
-                            }
-
-                            // HTML全体を一度だけ取得（これは良い改善）
-                            const fullHTML = textarea.innerHTML;
-                            const fullText = textarea.innerText;
-
-                            let offset = pos;
-                            let lastAdded = -1;
-                            let iterations = 0;
-                            const MAX_ITERATIONS = 100; // より安全な上限
-
-                            while (iterations < MAX_ITERATIONS) {
-                                const htmlUpTo = fullHTML.substring(0, offset);
-                                const textUpTo = fullText.substring(0, offset);
-
-                                // 元の正規表現を維持（安全性優先）
-                                const brCount = (htmlUpTo.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
-                                const nlCount = (textUpTo.match(/\n/g) || []).length;
-
-                                const added = brCount + nlCount;
-                                if (added === lastAdded) break;
-
-                                offset = pos + added;
-                                lastAdded = added;
-                                iterations++;
-                            }
-
-                            if (iterations >= MAX_ITERATIONS) {
-                                console.warn('scanOffset: Maximum iterations reached, possible infinite loop');
-                            }
-
-                            // 結果をキャッシュ
-                            this._scanOffsetCache = { pos: pos, result: offset };
-
-                            return offset;
-                        }
                         startPos = scanOffset(startPos);
                         endPos = scanOffset(endPos);
                         // -----------------------------------
@@ -1385,7 +1389,7 @@
             if (isContentEditable) {
                 const selection = getContentEditableSelection(activeElement);
                 selectedText = selection.selectedText;
-            } else if (textarea) {
+            } else {
                 selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
             }
 
