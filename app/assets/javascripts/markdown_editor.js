@@ -31,9 +31,7 @@
 
     // Wait for DOM content loaded
     function onReady(callback) {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', callback);
-
+        const run = () => {
             const textarea = document.getElementById('editor_content');
             const hiddenField = document.getElementById('content_hidden_field');
 
@@ -63,8 +61,14 @@
                 textarea.addEventListener('input', debounce(updatePlaceholderVisibility, 150));
                 textarea.addEventListener('blur', updatePlaceholderVisibility);
             }
-        } else {
             callback();
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run);
+            document.addEventListener('turbo:load', run);
+        } else {
+            run();
         }
     }
 
