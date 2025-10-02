@@ -45,23 +45,33 @@ bundle install
 
 ## アセットについて/About Assets
 
-本GemはRailsエンジンとしてアセット（JavaScript/CSS）を自動でプリコンパイル・ロードします。
+本GemはRailsエンジンとしてアセット（JavaScript/CSS）を提供します。
 
-This gem automatically precompiles and loads assets (JavaScript/CSS) as a Rails engine.
+This gem provides assets (JavaScript/CSS) as a Rails engine.
 
+**CSSを使用するには、以下の設定が必要です：**
 
-特別な設定や`application.js`/`application.css`へのrequire追加は不要です。
+**To use the CSS, the following configuration is required:**
 
-No special settings or require statements in `application.js`/`application.css` are needed.
+`app/assets/stylesheets/application.css` または `app/assets/stylesheets/application.scss` に以下を追加してください：
 
+Add the following to `app/assets/stylesheets/application.css` or `app/assets/stylesheets/application.scss`:
 
-**本番環境やプリコンパイルが必要な環境では、以下のコマンドを実行してください。**
-
-**In production or environments requiring precompilation, run the following command:**
-
-```bash
-rails assets:precompile
+**application.css の場合 / For application.css:**
+```css
+/*
+ *= require markdown_editor
+ */
 ```
+
+**application.scss の場合 / For application.scss:**
+```scss
+@use 'markdown_editor';
+```
+
+**JavaScriptは自動的に読み込まれるため、特別な設定は不要です。**
+
+**JavaScript is automatically loaded, so no special configuration is required.**
 
 ## 使い方/Usage
 
@@ -112,4 +122,4 @@ GitHub repository: https://github.com/dhq-boiler/ponkotsu-md-editor
 
 このGemは[MITライセンス](https://opensource.org/licenses/MIT)のもとで公開されています。
 
-This gem is released under the [MIT License](https://opensource.org/licenses/MIT).
+This gem is released under the [MIT License](https://opensource.org/licenses/MIT)
