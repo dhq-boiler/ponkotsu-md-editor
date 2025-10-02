@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ponkotsu-md-editor (0.2.28)
+    ponkotsu-md-editor (0.2.29)
       rails (~> 8.0.2)
 
 GEM
