@@ -75,6 +75,10 @@
     box-sizing: border-box;
 }
 
+#editor_content_placeholder:hover {
+    pointer-events: auto;
+}
+
 /* emptyクラスがない時（コンテンツがある時）にプレースホルダーを隠す */
 #editor_content:not(.empty) ~ #editor_content_placeholder {
     display: none;
