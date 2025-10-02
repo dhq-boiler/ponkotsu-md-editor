@@ -39,6 +39,44 @@
             if (textarea && hiddenField) {
                 // プレースホルダーのマウスホイールイベント処理
                 if (placeholder) {
+                    // クリック時にエディタにフォーカス
+                    placeholder.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        textarea.focus();
+
+                        // クリック位置にカーソルを設定（オプション）
+                        const rect = textarea.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+
+                        // contenteditable要素内の適切な位置にカーソルを設定
+                        if (document.caretRangeFromPoint) {
+                            const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                            if (range && textarea.contains(range.startContainer)) {
+                                const selection = window.getSelection();
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            } else {
+                                // フォールバック: エディタの開始位置にカーソルを設定
+                                const range = document.createRange();
+                                range.selectNodeContents(textarea);
+                                range.collapse(true);
+                                const selection = window.getSelection();
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                        } else {
+                            // caretRangeFromPointが利用できない場合のフォールバック
+                            const range = document.createRange();
+                            range.selectNodeContents(textarea);
+                            range.collapse(true);
+                            const selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    });
+
+                    // マウスホイールイベント処理（プレースホルダー内スクロール用）
                     placeholder.addEventListener('wheel', function(e) {
                         // プレースホルダーがスクロール可能かチェック
                         const canScrollVertically = placeholder.scrollHeight > placeholder.clientHeight;
@@ -100,7 +138,9 @@
                 // 初期状態でプレースホルダを表示するための空要素チェック
                 function updatePlaceholderVisibility() {
                     // <br>のみの場合も空とみなす
-                    if (textarea.innerHTML.trim() === '&nbsp;' || textarea.innerHTML.trim() === '' || textarea.innerHTML.trim() === '\<br\>') {
+                    if (textarea.innerHTML.trim() === '&nbsp;' || textarea.innerHTML.trim() === ''
+                                                               || textarea.innerHTML.trim() === '\<br\>'
+                                                               || textarea.innerHTML.trim() === '<div>  </div>') {
                         textarea.classList.add('empty');
                     } else {
                         textarea.classList.remove('empty');

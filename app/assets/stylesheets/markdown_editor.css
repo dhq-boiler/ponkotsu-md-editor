@@ -66,23 +66,13 @@
     width: 100%;
     height: calc(24 * 20px);
     color: var(--text-placeholder);
-    pointer-events: none;
     z-index: 10;
     white-space: pre-line;
     display: block;
     overflow: auto;
     padding: 0.5em 0.75em;
     box-sizing: border-box;
-}
-
-/* マウスホバー時のみpointer-eventsを有効化 */
-#editor_content_placeholder:hover {
-    pointer-events: auto;
-}
-
-/* エディタがフォーカスされている時はプレースホルダーのpointer-eventsを無効化 */
-#editor_content:focus ~ #editor_content_placeholder {
-    pointer-events: none !important;
+    cursor: text;
 }
 
 /* emptyクラスがない時（コンテンツがある時）にプレースホルダーを隠す */
