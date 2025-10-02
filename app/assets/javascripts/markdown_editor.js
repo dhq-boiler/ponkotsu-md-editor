@@ -34,8 +34,51 @@
         const run = () => {
             const textarea = document.getElementById('editor_content');
             const hiddenField = document.getElementById('content_hidden_field');
+            const placeholder = document.getElementById('editor_content_placeholder');
 
             if (textarea && hiddenField) {
+                // プレースホルダーのマウスホイールイベント処理
+                if (placeholder) {
+                    placeholder.addEventListener('wheel', function(e) {
+                        // プレースホルダーがスクロール可能かチェック
+                        const canScrollVertically = placeholder.scrollHeight > placeholder.clientHeight;
+                        const canScrollHorizontally = placeholder.scrollWidth > placeholder.clientWidth;
+
+                        if (canScrollVertically || canScrollHorizontally) {
+                            // スクロール方向を判定
+                            const deltaY = e.deltaY;
+                            const deltaX = e.deltaX;
+
+                            // 垂直スクロールの処理
+                            if (Math.abs(deltaY) > Math.abs(deltaX) && canScrollVertically) {
+                                const currentScrollTop = placeholder.scrollTop;
+                                const maxScrollTop = placeholder.scrollHeight - placeholder.clientHeight;
+
+                                // スクロール範囲内の場合のみイベントを停止
+                                if ((deltaY > 0 && currentScrollTop < maxScrollTop) ||
+                                    (deltaY < 0 && currentScrollTop > 0)) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    placeholder.scrollTop += deltaY;
+                                }
+                            }
+                            // 水平スクロールの処理
+                            else if (canScrollHorizontally) {
+                                const currentScrollLeft = placeholder.scrollLeft;
+                                const maxScrollLeft = placeholder.scrollWidth - placeholder.clientWidth;
+
+                                // スクロール範囲内の場合のみイベントを停止
+                                if ((deltaX > 0 && currentScrollLeft < maxScrollLeft) ||
+                                    (deltaX < 0 && currentScrollLeft > 0)) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    placeholder.scrollLeft += deltaX;
+                                }
+                            }
+                        }
+                    }, { passive: false });
+                }
+
                 const syncToHidden = () => {
                     hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
                 };
