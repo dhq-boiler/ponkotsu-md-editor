@@ -39,10 +39,20 @@
                 const syncToHidden = () => {
                     hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
                 };
-                textarea.addEventListener('input', debounce(syncToHidden, 150));
+
                 textarea.addEventListener('blur', syncToHidden);
-                // 初期化時にも同期
+
+                // 初期化時に同期
                 syncToHidden();
+
+                // フォーム送信時に確実に同期（最重要）
+                const form = textarea.closest('form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        syncToHidden();
+                        console.log('Form submitting with content length:', hiddenField.value.length);
+                    });
+                }
 
                 // 初期状態でプレースホルダを表示するための空要素チェック
                 function updatePlaceholderVisibility() {
