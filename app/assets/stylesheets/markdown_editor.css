@@ -61,15 +61,18 @@
 
 #editor_content_placeholder {
     position: absolute;
-    top: -17px;
-    left: 13px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(24 * 20px);
     color: var(--text-placeholder);
     pointer-events: none;
     z-index: 1;
     white-space: pre-line;
     display: block;
-    max-height: calc(24 * 20px);
     overflow: auto;
+    padding: 0.5em 0.75em;
+    box-sizing: border-box;
 }
 
 /* emptyクラスがない時（コンテンツがある時）にプレースホルダーを隠す */
