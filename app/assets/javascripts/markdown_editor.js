@@ -121,8 +121,6 @@
                     hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
                 };
 
-                textarea.addEventListener('blur', syncToHidden);
-
                 // 初期化時に同期
                 syncToHidden();
 
