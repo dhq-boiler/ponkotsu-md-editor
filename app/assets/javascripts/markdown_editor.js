@@ -165,6 +165,10 @@
 
 
 
+    // 正規表現を事前にコンパイル（関数外で1回のみ）
+    const BR_REGEX = /<br\s*\/?>/gi;
+    const NEWLINE_REGEX = /\n/g;
+
     function scanOffset(pos) {
         // キャッシュ取得
         if (_scanOffsetCache.has(pos)) {
@@ -172,25 +176,53 @@
         }
 
         const textarea = document.getElementById('editor_content');
+        if (!textarea) {
+            return pos;
+        }
 
-        // HTML全体を一度だけ取得（これは良い改善）
+        // HTML全体を一度だけ取得
         const fullHTML = textarea.innerHTML;
         const fullText = textarea.innerText;
+
+        // 早期リターン：HTMLが空の場合
+        if (!fullHTML || !fullText) {
+            _scanOffsetCache.set(pos, pos);
+            return pos;
+        }
 
         let offset = pos;
         let lastAdded = -1;
         let iterations = 0;
-        const MAX_ITERATIONS = 100; // より安全な上限
+        const MAX_ITERATIONS = 100;
 
         while (iterations < MAX_ITERATIONS) {
+            // 部分文字列を一度だけ作成
             const htmlUpTo = fullHTML.substring(0, offset);
             const textUpTo = fullText.substring(0, offset);
 
-            // 元の正規表現を維持（安全性優先）
-            const brCount = (htmlUpTo.match(/<br\s*\/?>(?![\w\W]*<)/g) || []).length;
-            const nlCount = (textUpTo.match(/\n/g) || []).length;
+            // 正規表現のグローバルフラグをリセットして使用
+            BR_REGEX.lastIndex = 0;
+            NEWLINE_REGEX.lastIndex = 0;
+
+            // マッチをカウント（より効率的な方法）
+            let brCount = 0;
+            let nlCount = 0;
+
+            // brタグのカウント
+            let brMatch;
+            while ((brMatch = BR_REGEX.exec(htmlUpTo)) !== null) {
+                brCount++;
+            }
+
+            // 改行のカウント
+            let nlMatch;
+            while ((nlMatch = NEWLINE_REGEX.exec(textUpTo)) !== null) {
+                nlCount++;
+            }
 
             const added = brCount + nlCount;
+
+            // 変化がなければ終了
             if (added === lastAdded) break;
 
             offset = pos + added;
