@@ -7,7 +7,13 @@
   <div id="editor_content"
        contenteditable="true"
        data-field="content"
-       class="ponkotsu-md-editor-form-control ponkotsu-md-editor-markdown-textarea">
+       class="ponkotsu-md-editor-form-control ponkotsu-md-editor-markdown-textarea"
+       translate="no"
+       data-notranslate="true"
+       data-gramm="false"
+       data-gramm_editor="false"
+       data-enable-grammarly="false"
+       spellcheck="false">
     <%
       def crlf_to_br(text)
         text.gsub(/\r\n|\r|\n/, "<br>").html_safe
@@ -16,7 +22,9 @@
     <%= crlf_to_br(h(locals[:content])) %>
   </div>
 
-  <div id="editor_content_placeholder">
+  <div id="editor_content_placeholder"
+       translate="no"
+       data-notranslate="true">
     <%= _placeholder %>
   </div>
 
