@@ -117,19 +117,45 @@
                     }, { passive: false });
                 }
 
-                const syncToHidden = () => {
-                    hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
-                };
+                const syncToHidden = (() => {
+                    let lastValue = '';
+                    let pendingUpdate = false;
+
+                    return () => {
+                        if (pendingUpdate) return;
+
+                        // テキスト取得（innerTextよりtextContentの方が高速）
+                        const currentText = (textarea.textContent || '').replaceAll('\u00A0', ' ');
+
+                        // 変更がない場合はスキップ
+                        if (currentText === lastValue) return;
+
+                        pendingUpdate = true;
+                        requestAnimationFrame(() => {
+                            hiddenField.value = currentText;
+                            lastValue = currentText;
+                            pendingUpdate = false;
+                        });
+                    };
+                })();
 
                 // 初期化時に同期
                 syncToHidden();
 
-                // フォーム送信時に確実に同期（最重要）
+                // フォーム送信時の処理を非同期化
                 const form = textarea.closest('form');
                 if (form) {
                     form.addEventListener('submit', function(e) {
-                        syncToHidden();
-                        console.log('Form submitting with content length:', hiddenField.value.length);
+                        e.preventDefault();
+
+                        // 同期的に値を設定（確実性のため）
+                        hiddenField.value = (textarea.textContent || '').replaceAll('\u00A0', ' ');
+
+                        // 次のティックで送信
+                        setTimeout(() => {
+                            // console.log('Form submitting with content length:', hiddenField.value.length);
+                            form.submit();
+                        }, 0);
                     });
                 }
 
