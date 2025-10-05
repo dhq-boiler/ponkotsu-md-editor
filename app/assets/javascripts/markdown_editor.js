@@ -161,10 +161,18 @@
 
                 // 初期状態でプレースホルダを表示するための空要素チェック
                 function updatePlaceholderVisibility() {
-                    // <br>のみの場合も空とみなす
-                    if (textarea.innerHTML.trim() === '&nbsp;' || textarea.innerHTML.trim() === ''
-                                                               || textarea.innerHTML.trim() === '\<br\>'
-                                                               || textarea.innerHTML.trim() === '<div>  </div>') {
+                    // innerHTML を一度だけ取得してキャッシュ
+                    const html = textarea.innerHTML.trim();
+
+                    // 空判定を簡潔に
+                    const isEmpty = html === '' ||
+                        html === '&nbsp;' ||
+                        html === '<br>' ||
+                        html === '<div><br></div>' ||
+                        html === '<div></div>' ||
+                        html === '<div>  </div>';
+
+                    if (isEmpty) {
                         textarea.classList.add('empty');
                     } else {
                         textarea.classList.remove('empty');
