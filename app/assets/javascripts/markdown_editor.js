@@ -240,7 +240,7 @@
     }
 
     onReady(function() {
-        console.log('Enhanced Markdown editor initializing...');
+        // console.log('Enhanced Markdown editor initializing...');
 
         // Get DOM elements
         const textarea = document.getElementById('editor_content');
@@ -306,7 +306,7 @@
                     'Expected:' + expected + '\n' +
                     'Actual:', actual);
             } else {
-                console.log('Assertion passed:', message);
+                // console.log('Assertion passed:', message);
             }
         }
 
@@ -417,16 +417,16 @@
             }
 
             // === デバッグ出力 ===
-            console.log('[DEBUG] getContentEditableSelection');
-            console.log('fullText:', JSON.stringify(fullText));
-            console.log('startPos:', startPos, 'endPos:', endPos);
-            console.log('selectedText:', JSON.stringify(selectedText));
-            console.log('rangeText:', JSON.stringify(rangeText));
-            console.log('textNodes:', textNodes.map(n => n.textContent));
-            console.log('range.startContainer:', range.startContainer);
-            console.log('range.startOffset:', range.startOffset);
-            console.log('range.endContainer:', range.endContainer);
-            console.log('range.endOffset:', range.endOffset);
+            // console.log('[DEBUG] getContentEditableSelection');
+            // console.log('fullText:', JSON.stringify(fullText));
+            // console.log('startPos:', startPos, 'endPos:', endPos);
+            // console.log('selectedText:', JSON.stringify(selectedText));
+            // console.log('rangeText:', JSON.stringify(rangeText));
+            // console.log('textNodes:', textNodes.map(n => n.textContent));
+            // console.log('range.startContainer:', range.startContainer);
+            // console.log('range.startOffset:', range.startOffset);
+            // console.log('range.endContainer:', range.endContainer);
+            // console.log('range.endOffset:', range.endOffset);
             // ===================
 
             return {
@@ -864,6 +864,8 @@
             }
         }
 
+        const MAX_CACHE_SIZE = 500;
+
         function analyzeHtml(target, isCountEmptyDiv = false) {
 
             const cacheKey = `${target}_${isCountEmptyDiv}`;
@@ -937,9 +939,13 @@
                 }
             }
 
-            if (analyzeHtmlCache.size > 100) {
-                const firstKey = analyzeHtmlCache.keys().next().value;
-                analyzeHtmlCache.delete(firstKey);
+            if (analyzeHtmlCache.size > MAX_CACHE_SIZE) {
+                // 古いエントリを複数削除（より効率的）
+                const deleteCount = Math.floor(MAX_CACHE_SIZE * 0.2); // 20%削除
+                const keys = Array.from(analyzeHtmlCache.keys());
+                for (let i = 0; i < deleteCount; i++) {
+                    analyzeHtmlCache.delete(keys[i]);
+                }
             }
 
             analyzeHtmlCache.set(cacheKey, lines);
@@ -1030,10 +1036,10 @@
                 const endOffset = getOffsetInContainer(textarea, range.endContainer, range.endOffset);
 
                 // === デバッグ出力（削除可能）===
-                console.log('DOM-based text:', JSON.stringify(domBasedText));
-                console.log('beginEndLenStrings:', beginEndLenStrings);
-                console.log('Selection offsets:', startOffset, endOffset);
-                console.log('Selected text should be:', JSON.stringify(domBasedText.substring(startOffset, endOffset)));
+                // console.log('DOM-based text:', JSON.stringify(domBasedText));
+                // console.log('beginEndLenStrings:', beginEndLenStrings);
+                // console.log('Selection offsets:', startOffset, endOffset);
+                // console.log('Selected text should be:', JSON.stringify(domBasedText.substring(startOffset, endOffset)));
                 // =============================
 
                 const startPos = getLineAndCharIndex(textarea, startOffset);
@@ -1228,10 +1234,10 @@
             const range = selection.getRangeAt(0);
             const selectedText = range.toString();
 
-            console.log('Markdown apply debug:');
-            console.log('Selected text:', JSON.stringify(selectedText));
-            console.log('Before markup:', JSON.stringify(before));
-            console.log('After markup:', JSON.stringify(after));
+            // console.log('Markdown apply debug:');
+            // console.log('Selected text:', JSON.stringify(selectedText));
+            // console.log('Before markup:', JSON.stringify(before));
+            // console.log('After markup:', JSON.stringify(after));
 
             if (selectedText.length === 0) {
                 // No selection - insert markers at cursor position
@@ -1261,7 +1267,7 @@
                 newSelection.removeAllRanges();
                 newSelection.addRange(newRange);
 
-                console.log('DOM replacement completed successfully');
+                // console.log('DOM replacement completed successfully');
 
                 // Fire input event for change detection
                 element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1645,7 +1651,7 @@
                     script.onload = () => {
                         this.loaded = true;
                         this.loading = false;
-                        console.log('Twitter widgets.js loaded successfully');
+                        // console.log('Twitter widgets.js loaded successfully');
                         resolve();
                     };
 
@@ -1676,7 +1682,7 @@
 
                     if (window.twttr && window.twttr.widgets) {
                         await window.twttr.widgets.load(container);
-                        console.log('Twitter widgets initialized');
+                        // console.log('Twitter widgets initialized');
                     }
                 } catch (error) {
                     console.error('Failed to initialize Twitter widgets:', error);
@@ -2199,7 +2205,7 @@
             });
         }
 
-        console.log('ponkotsu Markdown editor initialized successfully');
+        // console.log('ponkotsu Markdown editor initialized successfully');
     });
 
     // Enhanced error handling
