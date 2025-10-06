@@ -154,7 +154,7 @@
                         // 次のティックで送信
                         setTimeout(() => {
                             // console.log('Form submitting with content length:', hiddenField.value.length);
-                            form.submit();
+                            form.requestSubmit();
                         }, 0);
                     });
                 }
