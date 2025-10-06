@@ -149,7 +149,7 @@
                         e.preventDefault();
 
                         // 同期的に値を設定（確実性のため）
-                        hiddenField.value = (textarea.textContent || '').replaceAll('\u00A0', ' ');
+                        hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
 
                         // 次のティックで送信
                         setTimeout(() => {
