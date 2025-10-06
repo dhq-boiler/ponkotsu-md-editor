@@ -124,8 +124,8 @@
                     return () => {
                         if (pendingUpdate) return;
 
-                        // テキスト取得（innerTextよりtextContentの方が高速）
-                        const currentText = (textarea.textContent || '').replaceAll('\u00A0', ' ');
+                        // テキスト取得
+                        const currentText = (textarea.innerText || '').replaceAll('\u00A0', ' ');
 
                         // 変更がない場合はスキップ
                         if (currentText === lastValue) return;
