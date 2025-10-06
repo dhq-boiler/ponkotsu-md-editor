@@ -151,10 +151,20 @@
                         // 同期的に値を設定（確実性のため）
                         hiddenField.value = (textarea.innerText || '').replaceAll('\u00A0', ' ');
 
+                        // 送信ボタンのパラメーターを取得して追加
+                        const submitter = e.submitter;
+                        if (submitter && submitter.name && submitter.value) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = submitter.name;
+                            input.value = submitter.value;
+                            form.appendChild(input);
+                        }
+
                         // 次のティックで送信
                         setTimeout(() => {
                             // console.log('Form submitting with content length:', hiddenField.value.length);
-                            form.requestSubmit();
+                            form.submit();
                         }, 0);
                     });
                 }
