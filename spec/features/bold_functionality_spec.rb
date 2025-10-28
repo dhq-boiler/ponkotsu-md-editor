@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "spec_helper"
+require "./spec/spec_helper"
 require "capybara/rspec"
 require "selenium-webdriver"
 
@@ -30,7 +30,7 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
     context "when selecting text in the middle of a word" do
       it "applies bold formatting to the selected portion" do
         # テキストを設定
-        set_editor_text("これはテストです。")
+        editor_text = "これはテストです。"
 
         # "はテス" を選択（位置2-6）
         select_text_range(2, 6)
@@ -39,65 +39,65 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
         click_bold_button
 
         # 結果を確認
-        expect(get_editor_text).to eq("これ**はテス**トです。")
+        expect(editor_text).to eq("これ**はテス**トです。")
       end
     end
 
     context "when selecting text across multiple lines" do
       it "applies bold formatting across line breaks" do
-        set_editor_text("一行目です。\n二行目です。")
+        editor_text = "一行目です。\n二行目です。"
 
         # 改行をまたぐ選択
         select_text_range(3, 8)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("一行**目です。\n二**行目です。")
+        expect(editor_text).to eq("一行**目です。\n二**行目です。")
       end
     end
 
     context "when no text is selected (cursor position)" do
       it "inserts bold markers at cursor position" do
-        set_editor_text("テスト文章")
+        editor_text = "テスト文章"
 
         # カーソルを位置3に設定
         select_text_range(3, 3)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("テス****ト文章")
+        expect(editor_text).to eq("テス****ト文章")
       end
     end
 
     context "when selecting text in the last line of multiline content" do
       it "applies bold formatting correctly" do
-        set_editor_text("一行目\n二行目\n三行目です")
+        editor_text = "一行目\n二行目\n三行目です"
 
         # 最後の行の "三行" を選択
         select_text_range(11, 13)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("一行目\n二行目\n**三行**目です")
+        expect(editor_text).to eq("一行目\n二行目\n**三行**目です")
       end
     end
 
     context "when working with Japanese characters" do
       it "calculates positions correctly for multibyte characters" do
-        set_editor_text("あいうえお\nかきくけこ\nさしすせそ")
+        editor_text = "あいうえお\nかきくけこ\nさしすせそ"
 
         # "きく" を選択
         select_text_range(7, 10)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("あいうえお\nか**きく**けこ\nさしすせそ")
+        expect(editor_text).to eq("あいうえお\nか**きく**けこ\nさしすせそ")
       end
     end
 
     context "when applying bold multiple times" do
       it "allows multiple bold sections in the same text" do
-        set_editor_text("これは最初のテストで、これは二番目のテストです。")
+        editor_text = "これは最初のテストで、これは二番目のテストです。"
 
         # 最初の "テスト" を選択
         select_text_range(4, 7)
@@ -107,60 +107,57 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
         select_text_range(18, 21)
         click_bold_button
 
-        expect(get_editor_text).to eq("これは**最初**のテストで、これは**二番**目のテストです。")
+        expect(editor_text).to eq("これは**最初**のテストで、これは**二番**目のテストです。")
       end
     end
 
     context "edge cases" do
       it "handles selection at the very beginning of text" do
-        set_editor_text("テスト文章です")
+        editor_text = "テスト文章です"
 
         # 最初の文字を選択
         select_text_range(0, 1)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("**テ**スト文章です")
+        expect(editor_text).to eq("**テ**スト文章です")
       end
 
       it "handles selection at the very end of text" do
-        set_editor_text("テスト文章です")
+        editor_text = "テスト文章です"
 
         # 最後の文字を選択
         select_text_range(6, 7)
 
         click_bold_button
 
-        expect(get_editor_text).to eq("テスト文章で**す**")
+        expect(editor_text).to eq("テスト文章で**す**")
       end
 
       it "handles empty text editor" do
-        set_editor_text("")
+        editor_text = ""
 
         # 空のエディタでBoldを適用
         click_bold_button
 
-        expect(get_editor_text).to eq("****")
+        expect(editor_text).to eq("****")
       end
     end
   end
 
   describe "Selection range accuracy" do
     it "maintains correct cursor position after bold insertion" do
-      set_editor_text("テスト文章")
-
       # 中央にカーソルを設定
       select_text_range(2, 2)
 
       click_bold_button
 
       # カーソル位置が正しいかチェック（Bold開始タグの後）
-      selection_info = get_selection_info
       expect(selection_info[:start]).to eq(4) # "テス**" の後
     end
 
     it "correctly handles selection after text modification" do
-      set_editor_text("元のテキスト")
+      editor_text = "元のテキスト"
 
       # 一部をBoldに
       select_text_range(2, 5)
@@ -170,7 +167,7 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
       select_text_range(0, 2)
       click_bold_button
 
-      expect(get_editor_text).to eq("**元の****テキ**スト")
+      expect(editor_text).to eq("**元の****テキ**スト")
     end
   end
 
@@ -182,7 +179,7 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
     sleep(1) # エディタの初期化を待つ
   end
 
-  def set_editor_text(text)
+  def editor_text=(text)
     page.execute_script("
       const editor = document.getElementById('editor_content');
       editor.innerText = '#{text.gsub("'", "\\'")}';
@@ -190,7 +187,7 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
     ")
   end
 
-  def get_editor_text
+  def editor_text
     page.evaluate_script("
       const editor = document.getElementById('editor_content');
       return editor.innerText || editor.textContent || '';
@@ -248,7 +245,7 @@ RSpec.describe "Markdown Editor Bold Function", type: :feature, js: true do
     page.execute_script("insertMarkdown('**', '**');")
   end
 
-  def get_selection_info
+  def selection_info
     result = page.evaluate_script("
       if (typeof getContentEditableSelection === 'function') {
         const editor = document.getElementById('editor_content');
