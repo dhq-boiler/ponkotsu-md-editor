@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe Ponkotsu::Md::Editor do
+RSpec.describe PonkotsuMdEditor do
   it "has a version number" do
-    expect(Ponkotsu::Md::Editor::VERSION).not_to be nil
+    expect(PonkotsuMdEditor::VERSION).not_to be nil
   end
 
   it "does something useful" do
