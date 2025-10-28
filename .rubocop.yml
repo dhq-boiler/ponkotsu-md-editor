@@ -7,3 +7,4 @@ Style/StringLiterals:
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+  AutoCorrect: false
