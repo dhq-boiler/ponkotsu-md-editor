@@ -5,7 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in ponkotsu-md-editor.gemspec
 gemspec
 
-gem "rails", "~> 8.0.2"
+gem "rails", "~> 8.1"
 
 gem "irb"
 gem "rake", "~> 13.0"
