@@ -28,7 +28,8 @@ module PonkotsuMdEditor
       attribute = attribute[:attribute] if attribute.is_a?(Hash)
       content = content[:attribute] if content.is_a?(Hash)
       options = options[:options] if options.is_a?(Hash)
-      render "ponkotsu_md_editor/editor", locals: { attribute: attribute, content: content, form: form, options: options }
+      render "ponkotsu_md_editor/editor",
+             locals: { attribute: attribute, content: content, form: form, options: options }
     end
   end
 end
