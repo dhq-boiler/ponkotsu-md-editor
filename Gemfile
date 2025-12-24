@@ -13,8 +13,7 @@ gem "rake", "~> 13.0"
 gem "rspec", "~> 3.0"
 
 # Testing dependencies
-gem "capybara", "~> 3.39"
-gem "selenium-webdriver", "~> 4.10"
-gem "webdrivers", "~> 5.3"
+gem "capybara", "~> 3.40"
+gem "selenium-webdriver", "~> 4.27"
 
 gem "rubocop", "~> 1.21"
