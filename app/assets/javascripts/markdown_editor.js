@@ -873,6 +873,16 @@
                 }
 
                 if (beginCharIndex >= line.begin && beginCharIndex <= line.end) {
+                    // 行の終端で、次の行が空行の場合、次の行を選択
+                    if (beginCharIndex === line.end && i + 1 < beginEndLenStrings.length) {
+                        const nextLine = beginEndLenStrings[i + 1];
+                        if (nextLine.str === "⹉") {
+                            retBeginLine = i + 1;
+                            retBeginCharIndex = 0;
+                            break;
+                        }
+                    }
+
                     retBeginLine = i;
                     retBeginCharIndex = beginCharIndex - line.begin + emptyLineCount;
                     break;
@@ -889,6 +899,16 @@
                 }
 
                 if (endCharIndex >= line.begin && endCharIndex <= line.end) {
+                    // 行の終端で、次の行が空行の場合、次の行を選択
+                    if (endCharIndex === line.end && i + 1 < beginEndLenStrings.length) {
+                        const nextLine = beginEndLenStrings[i + 1];
+                        if (nextLine.str === "⹉") {
+                            retEndLine = i + 1;
+                            retEndCharIndex = 0;
+                            break;
+                        }
+                    }
+
                     retEndLine = i;
                     retEndCharIndex = endCharIndex - line.begin + emptyLineCount;
                     break;
@@ -903,9 +923,15 @@
             for (let i = 0; i < beginEndLenStrings.length; i++) {
                 const line = beginEndLenStrings[i];
 
-                // 改行行は変更せずそのまま保持
+                // 空行（改行行）の処理
                 if (line.str === "⹉") {
-                    newLines.push(line.str);
+                    // カーソルが空行にある場合、before + after を挿入
+                    if (i === targetTextPosition.begin.line && i === targetTextPosition.end.line) {
+                        newLines.push(before + after);
+                    } else {
+                        // 空行は変更せずそのまま保持
+                        newLines.push(line.str);
+                    }
                     continue;
                 }
 
@@ -1204,10 +1230,11 @@
                 const endOffset = getOffsetInContainer(textarea, range.endContainer, range.endOffset);
 
                 // === デバッグ出力（削除可能）===
+                // console.log('=== insertMarkdown Debug ===');
                 // console.log('DOM-based text:', JSON.stringify(domBasedText));
-                // console.log('beginEndLenStrings:', beginEndLenStrings);
+                // console.log('beginEndLenStrings:', JSON.stringify(beginEndLenStrings));
                 // console.log('Selection offsets:', startOffset, endOffset);
-                // console.log('Selected text should be:', JSON.stringify(domBasedText.substring(startOffset, endOffset)));
+                // console.log('Selected text:', JSON.stringify(domBasedText.substring(startOffset, endOffset)));
                 // =============================
 
                 const startPos = getLineAndCharIndex(textarea, startOffset);
