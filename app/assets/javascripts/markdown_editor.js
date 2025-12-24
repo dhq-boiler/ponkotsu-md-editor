@@ -5,6 +5,7 @@
     let _scanOffsetCache = new Map();
 
     const analyzeHtmlCache = new Map();
+    const MAX_CACHE_SIZE = 500;
 
     // Debounce function for delayed execution
     function debounce(func, wait) {
@@ -907,8 +908,6 @@
                 return 0;
             }
         }
-
-        const MAX_CACHE_SIZE = 500;
 
         function analyzeHtml(target, isCountEmptyDiv = false) {
 
