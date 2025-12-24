@@ -1188,10 +1188,9 @@
                 let selectLineMode = false;
                 let selectedLinePos;
 
-                if (!selection.rangeCount || selection.isCollapsed) {
-                    // 行選択モード
-                    selectLineMode = true;
-                    selectedLinePos = getCurrentLineIndex(beginEndLenStrings);
+                if (!selection.rangeCount) {
+                    console.warn('No selection range');
+                    return;
                 }
 
                 const range = selection.getRangeAt(0);
@@ -1233,6 +1232,11 @@
                         (before + selectedTextContent + after) :
                         (before + after);
 
+                    // カーソル位置を計算（空文字選択時はbeforeの直後、テキスト選択時は挿入テキストの最後）
+                    const cursorOffsetInInsertedText = selectedTextContent.length > 0 ?
+                        insertedText.length :
+                        before.length;
+
                     // 新しく挿入されたテキストの終端を探す
                     const walker = document.createTreeWalker(
                         textarea,
@@ -1251,7 +1255,7 @@
                             const textIndex = node.textContent.indexOf(insertedText);
                             if (textIndex !== -1) {
                                 foundNode = node;
-                                foundOffset = textIndex + insertedText.length;
+                                foundOffset = textIndex + cursorOffsetInInsertedText;
                                 break;
                             }
                         }
@@ -1270,7 +1274,7 @@
                         // フォールバック: 従来の方法
                         const newDomText = buildDomBasedText(textarea);
                         const targetPosition = Math.min(
-                            startOffset + insertedText.length,
+                            startOffset + cursorOffsetInInsertedText,
                             newDomText.length
                         );
                         setContentEditableSelection(textarea, targetPosition, targetPosition);
