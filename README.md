@@ -105,9 +105,36 @@ params[:model][:content] # => Markdown text
 
 This gem mainly provides Rails view elements (helpers, partials, JS/CSS assets), so UI and behavior cannot be automatically tested with standard RSpec, etc.
 
+### E2Eテスト/E2E Testing
 
-- UIやエディタの動作確認には、手動テストを推奨します。
-  - For UI/editor behavior, manual testing is recommended.
+ChromeとFirefoxを使用したE2Eテストを用意しています。
+
+E2E tests using Chrome and Firefox are available.
+
+```bash
+# すべてのテストを実行/Run all tests
+bundle exec rspec spec/features/markdown_editor_e2e_spec.rb
+
+# 簡単にテストを実行/Run tests easily
+bin/run_e2e_tests
+
+# 特定のブラウザでテスト/Test with specific browser
+bin/run_e2e_tests --browser chrome
+bin/run_e2e_tests --browser firefox
+
+# 特定のカテゴリをテスト/Test specific category
+bin/run_e2e_tests --category basic
+bin/run_e2e_tests --category formatting
+```
+
+詳細は [E2E_TESTING.md](E2E_TESTING.md) を参照してください。
+
+See [E2E_TESTING.md](E2E_TESTING.md) for more details.
+
+### 手動テスト/Manual Testing
+
+- UIやエディタの動作確認には、手動テストも推奨します。
+  - Manual testing is also recommended for UI/editor behavior verification.
 
 ## コントリビュート/Contributing
 
