@@ -609,7 +609,7 @@
         // 外部公開
         window.getContentEditableSelection = getContentEditableSelection;
 
-        // Set selection range at specified position (precision enhanced version)
+        // Set selection range at specified position (改行を含むinnerTextベースの位置)
         function setContentEditableSelection(element, start, end) {
             element.focus();
 
@@ -619,78 +619,181 @@
             start = Math.max(0, Math.min(start, fullText.length));
             end = Math.max(start, Math.min(end, fullText.length));
 
-            // Get text nodes
-            const walker = document.createTreeWalker(
-                element,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
+            // buildLinearTextMapを使用してDOM構造を解析（改行を含む）
+            function buildLinearTextMap(container) {
+                let textMap = [];
+                let currentPos = 0;
 
-            const textNodes = [];
-            let node;
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
+                function processNode(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const text = node.textContent;
+                        textMap.push({
+                            node: node,
+                            type: 'text',
+                            start: currentPos,
+                            end: currentPos + text.length,
+                            text: text
+                        });
+                        currentPos += text.length;
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.tagName === 'DIV') {
+                            if (node.children.length === 1 && node.children[0].tagName === 'BR') {
+                                textMap.push({
+                                    node: node,
+                                    type: 'div-br',
+                                    start: currentPos,
+                                    end: currentPos + 1,
+                                    text: '\n'
+                                });
+                                currentPos += 1;
+                                return;
+                            } else if (node.innerHTML === '<br>' || node.innerHTML === '<br/>' || node.innerHTML === '') {
+                                textMap.push({
+                                    node: node,
+                                    type: 'empty-div',
+                                    start: currentPos,
+                                    end: currentPos + 1,
+                                    text: '\n'
+                                });
+                                currentPos += 1;
+                                return;
+                            }
+                        } else if (node.tagName === 'BR') {
+                            textMap.push({
+                                node: node,
+                                type: 'br',
+                                start: currentPos,
+                                end: currentPos + 1,
+                                text: '\n'
+                            });
+                            currentPos += 1;
+                            return;
+                        }
 
-            // Fallback for missing text nodes
-            if (textNodes.length === 0) {
-                console.warn('No text nodes found, recreating content');
-                element.textContent = fullText;
-
-                // Get text nodes again
-                const newWalker = document.createTreeWalker(
-                    element,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-                while (node = newWalker.nextNode()) {
-                    textNodes.push(node);
+                        // 子ノードを処理
+                        for (let child of node.childNodes) {
+                            processNode(child);
+                        }
+                    }
                 }
+
+                for (let child of container.childNodes) {
+                    processNode(child);
+                }
+
+                return textMap;
             }
 
-            // Calculate cumulative positions of text nodes
-            let cumulativeOffset = 0;
+            const textMap = buildLinearTextMap(element);
+
+            // startとendの位置に対応するノードとオフセットを見つける
             let startNode = null, startOffset = 0;
             let endNode = null, endOffset = 0;
 
-            for (let i = 0; i < textNodes.length; i++) {
-                const textNode = textNodes[i];
-                const nodeLength = textNode.textContent.length;
-
-                // Find start position
-                if (!startNode && cumulativeOffset + nodeLength >= start) {
-                    startNode = textNode;
-                    startOffset = start - cumulativeOffset;
+            for (let item of textMap) {
+                if (!startNode && start >= item.start && start < item.end) {
+                    // Position is within this item
+                    if (item.type === 'text') {
+                        startNode = item.node;
+                        startOffset = start - item.start;
+                    } else {
+                        // Position is at the start of a line break element
+                        // Set cursor before this element (not after)
+                        const parent = item.node.parentNode;
+                        let childIndex = 0;
+                        for (let i = 0; i < parent.childNodes.length; i++) {
+                            if (parent.childNodes[i] === item.node) {
+                                childIndex = i; // Position before this node
+                                break;
+                            }
+                        }
+                        startNode = parent;
+                        startOffset = childIndex;
+                    }
+                } else if (!startNode && start === item.end) {
+                    // Position is at the end boundary of this item
+                    if (item.type === 'text') {
+                        // At end of text node
+                        startNode = item.node;
+                        startOffset = start - item.start;
+                    } else {
+                        // At end of line break element - set cursor after it
+                        const parent = item.node.parentNode;
+                        let childIndex = 0;
+                        for (let i = 0; i < parent.childNodes.length; i++) {
+                            if (parent.childNodes[i] === item.node) {
+                                childIndex = i + 1; // Position after this node
+                                break;
+                            }
+                        }
+                        startNode = parent;
+                        startOffset = childIndex;
+                    }
                 }
 
-                // Find end position
-                if (!endNode && cumulativeOffset + nodeLength >= end) {
-                    endNode = textNode;
-                    endOffset = end - cumulativeOffset;
-                    break;
+                if (!endNode && end >= item.start && end < item.end) {
+                    if (item.type === 'text') {
+                        endNode = item.node;
+                        endOffset = end - item.start;
+                    } else {
+                        // Position is at the start of a line break element
+                        const parent = item.node.parentNode;
+                        let childIndex = 0;
+                        for (let i = 0; i < parent.childNodes.length; i++) {
+                            if (parent.childNodes[i] === item.node) {
+                                childIndex = i; // Position before this node
+                                break;
+                            }
+                        }
+                        endNode = parent;
+                        endOffset = childIndex;
+                    }
+                } else if (!endNode && end === item.end) {
+                    if (item.type === 'text') {
+                        endNode = item.node;
+                        endOffset = end - item.start;
+                    } else {
+                        const parent = item.node.parentNode;
+                        let childIndex = 0;
+                        for (let i = 0; i < parent.childNodes.length; i++) {
+                            if (parent.childNodes[i] === item.node) {
+                                childIndex = i + 1;
+                                break;
+                            }
+                        }
+                        endNode = parent;
+                        endOffset = childIndex;
+                    }
                 }
 
-                cumulativeOffset += nodeLength;
+                if (startNode && endNode) break;
             }
 
-            // Enhanced fallback processing
-            if (!startNode && textNodes.length > 0) {
-                startNode = textNodes[textNodes.length - 1];
-                startOffset = Math.min(start, startNode.textContent.length);
-            }
-
-            if (!endNode && textNodes.length > 0) {
-                endNode = textNodes[textNodes.length - 1];
-                endOffset = Math.min(end, endNode.textContent.length);
+            // Fallback: 位置が見つからない場合、最後のテキストノードの末尾に設定
+            if (!startNode || !endNode) {
+                const textItems = textMap.filter(i => i.type === 'text');
+                if (textItems.length > 0) {
+                    const lastTextItem = textItems[textItems.length - 1];
+                    if (!startNode) {
+                        startNode = lastTextItem.node;
+                        startOffset = lastTextItem.node.textContent.length;
+                    }
+                    if (!endNode) {
+                        endNode = lastTextItem.node;
+                        endOffset = lastTextItem.node.textContent.length;
+                    }
+                }
             }
 
             if (startNode && endNode) {
                 try {
-                    // Safe boundary setting
-                    startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
-                    endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
+                    // Only clamp offset for text nodes, not element nodes
+                    if (startNode.nodeType === Node.TEXT_NODE) {
+                        startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
+                    }
+                    if (endNode.nodeType === Node.TEXT_NODE) {
+                        endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
+                    }
 
                     const range = document.createRange();
                     range.setStart(startNode, startOffset);
@@ -702,7 +805,6 @@
 
                 } catch (e) {
                     console.error('Selection setting failed:', e);
-                    // Final fallback
                     try {
                         const range = document.createRange();
                         range.selectNodeContents(element);
@@ -857,62 +959,95 @@
                 }
             }
 
+            // ノードがtextMapにない場合（親コンテナなど）、子ノードから計算
+            if (node === container && node.nodeType === Node.ELEMENT_NODE) {
+                let calculatedOffset = 0;
+                for (let i = 0; i < offset && i < node.childNodes.length; i++) {
+                    const child = node.childNodes[i];
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        calculatedOffset += child.textContent.length;
+                    } else if (child.nodeType === Node.ELEMENT_NODE) {
+                        // Check if this child is in the textMap
+                        const childItem = textMap.find(item => item.node === child);
+                        if (childItem) {
+                            calculatedOffset += (childItem.end - childItem.start);
+                        }
+                    }
+                }
+                return calculatedOffset;
+            }
+
             return 0;
         }
 
         function selectLineNumberAndCharIndex(beginEndLenStrings, beginCharIndex, endCharIndex) {
             let retBeginLine = 0, retBeginCharIndex = 0;
             let retEndLine = 0, retEndCharIndex = 0;
-            let emptyLineCount = 0;
 
+            // Find line for beginCharIndex - handle boundary ambiguity by preferring non-empty lines
+            let beginMatches = [];
             for (let i = 0; i < beginEndLenStrings.length; i++) {
                 const line = beginEndLenStrings[i];
-
-                if (line.str === "⹉") {
-                    emptyLineCount++;
-                }
-
                 if (beginCharIndex >= line.begin && beginCharIndex <= line.end) {
-                    // 行の終端で、次の行が空行の場合、次の行を選択
-                    if (beginCharIndex === line.end && i + 1 < beginEndLenStrings.length) {
-                        const nextLine = beginEndLenStrings[i + 1];
-                        if (nextLine.str === "⹉") {
-                            retBeginLine = i + 1;
-                            retBeginCharIndex = 0;
-                            break;
-                        }
-                    }
-
-                    retBeginLine = i;
-                    retBeginCharIndex = beginCharIndex - line.begin + emptyLineCount;
-                    break;
+                    beginMatches.push({
+                        line: i,
+                        char: beginCharIndex - line.begin,
+                        isEmpty: line.str === "⹉",
+                        isAtBoundary: beginCharIndex === line.begin || beginCharIndex === line.end
+                    });
                 }
             }
 
-            emptyLineCount = 0;
+            console.log('selectLineNumberAndCharIndex DEBUG:');
+            console.log('  beginCharIndex:', beginCharIndex);
+            console.log('  beginMatches:', JSON.stringify(beginMatches, null, 2));
 
+            // Save to debug info for testing
+            if (typeof window !== 'undefined' && window._debugInfo) {
+                window._debugInfo.selectDebug = {
+                    beginCharIndex: beginCharIndex,
+                    beginMatches: beginMatches
+                };
+            }
+
+            // If multiple matches, prefer non-empty lines
+            if (beginMatches.length > 1) {
+                const nonEmptyMatches = beginMatches.filter(m => !m.isEmpty);
+                if (nonEmptyMatches.length > 0) {
+                    beginMatches = nonEmptyMatches;
+                }
+            }
+
+            if (beginMatches.length > 0) {
+                retBeginLine = beginMatches[0].line;
+                retBeginCharIndex = beginMatches[0].char;
+            }
+
+            // Find line for endCharIndex - handle boundary ambiguity by preferring non-empty lines
+            let endMatches = [];
             for (let i = 0; i < beginEndLenStrings.length; i++) {
                 const line = beginEndLenStrings[i];
-
-                if (line.str === "⹉") {
-                    emptyLineCount++;
-                }
-
                 if (endCharIndex >= line.begin && endCharIndex <= line.end) {
-                    // 行の終端で、次の行が空行の場合、次の行を選択
-                    if (endCharIndex === line.end && i + 1 < beginEndLenStrings.length) {
-                        const nextLine = beginEndLenStrings[i + 1];
-                        if (nextLine.str === "⹉") {
-                            retEndLine = i + 1;
-                            retEndCharIndex = 0;
-                            break;
-                        }
-                    }
-
-                    retEndLine = i;
-                    retEndCharIndex = endCharIndex - line.begin + emptyLineCount;
-                    break;
+                    endMatches.push({
+                        line: i,
+                        char: endCharIndex - line.begin,
+                        isEmpty: line.str === "⹉",
+                        isAtBoundary: endCharIndex === line.begin || endCharIndex === line.end
+                    });
                 }
+            }
+
+            // If multiple matches, prefer non-empty lines
+            if (endMatches.length > 1) {
+                const nonEmptyMatches = endMatches.filter(m => !m.isEmpty);
+                if (nonEmptyMatches.length > 0) {
+                    endMatches = nonEmptyMatches;
+                }
+            }
+
+            if (endMatches.length > 0) {
+                retEndLine = endMatches[0].line;
+                retEndCharIndex = endMatches[0].char;
             }
 
             return { begin: { line: retBeginLine, char: retBeginCharIndex }, end: { line: retEndLine, char: retEndCharIndex } };
@@ -978,18 +1113,21 @@
         }
 
         function convertToInnerHtml(newLines) {
+            // ブラウザのネイティブ構造に合わせて、<br>タグを使用した平坦な構造を生成
             let html = "";
             for (let i = 0; i < newLines.length; i++) {
-                if (i === 0) {
-                    html += newLines[i].split("⹉").join("");
+                let insert = newLines[i];
+                if (i > 0) {
+                    // 行の区切りとして<br>を追加
+                    html += "<br>";
+                }
+                if (insert === "⹉") {
+                    // 空行の場合は何も追加しない（<br>タグのみで表現）
+                    // noop
                 } else {
-                    let insert = newLines[i];
-                    if (insert === "⹉") {
-                        insert = insert.split("⹉").join("<br>");
-                    } else {
-                        insert = insert.split("⹉").join("");
-                    }
-                    html += "<div>" + insert + "</div>";
+                    // 通常の行の場合はテキストを追加
+                    insert = insert.split("⹉").join("");
+                    html += insert;
                 }
             }
             return html;
@@ -1069,67 +1207,120 @@
                 return analyzeHtmlCache.get(cacheKey);
             }
 
+            // Helper function to strip HTML tags
+            function stripHtmlTags(html) {
+                return html.replace(/<[^>]*>/g, '');
+            }
+
             let lines = [];
-            let remain = target;
 
-            while (remain.length > 0) {
-                // <div><br></div> パターン（改行）- 常に維持
-                if (remain.startsWith("<div><br></div>")) {
-                    lines.push("⹉");
-                    remain = remain.substring(15);
-                    continue;
-                }
+            // Check if this is div-based structure or br-based structure
+            const hasDivStructure = target.startsWith("<div>") || target.startsWith("<div ");
 
-                // <div></div> パターン（空のdiv）- isCountEmptyDivで制御
-                if (remain.startsWith("<div></div>")) {
-                    if (isCountEmptyDiv) {
+            if (!hasDivStructure && target.includes("<br>")) {
+                // Br-based structure (flat): Split by <br> tags
+                const segments = target.split("<br>");
+                for (let segment of segments) {
+                    const textContent = stripHtmlTags(segment);
+                    if (textContent === "") {
                         lines.push("⹉");
-                    }
-                    remain = remain.substring(11);
-                    continue;
-                }
-
-                // <div>内容</div> パターン
-                const divMatch = remain.match(/^<div>([^<]*)<\/div>/);
-                if (divMatch) {
-                    lines.push(divMatch[1]);
-                    remain = remain.substring(divMatch[0].length);
-                    continue;
-                }
-
-                // <br> パターン（単体の改行）
-                if (remain.startsWith("<br>")) {
-                    lines.push("⹉");
-                    remain = remain.substring(4);
-                    continue;
-                }
-
-                // <div> の開始を探す
-                const divIndex = remain.indexOf("<div>");
-                if (divIndex > 0) {
-                    lines.push(remain.substring(0, divIndex));
-                    remain = remain.substring(divIndex);
-                    continue;
-                }
-
-                // その他のタグまたは残りのテキスト
-                const nextTagIndex = remain.indexOf("<");
-                if (nextTagIndex === -1) {
-                    if (remain.trim()) {
-                        lines.push(remain);
-                    }
-                    break;
-                }
-
-                if (nextTagIndex > 0) {
-                    lines.push(remain.substring(0, nextTagIndex));
-                    remain = remain.substring(nextTagIndex);
-                } else {
-                    const tagEnd = remain.indexOf(">");
-                    if (tagEnd !== -1) {
-                        remain = remain.substring(tagEnd + 1);
                     } else {
+                        lines.push(textContent);
+                    }
+                }
+            } else {
+                // Div-based structure: Parse divs
+                let remain = target;
+
+                while (remain.length > 0) {
+                    // <div><br></div> パターン（改行）- 常に維持
+                    if (remain.startsWith("<div><br></div>")) {
+                        lines.push("⹉");
+                        remain = remain.substring(15);
+                        continue;
+                    }
+
+                    // <div></div> パターン（空のdiv）- isCountEmptyDivで制御
+                    if (remain.startsWith("<div></div>")) {
+                        if (isCountEmptyDiv) {
+                            lines.push("⹉");
+                        }
+                        remain = remain.substring(11);
+                        continue;
+                    }
+
+                    // <div>内容</div> パターン（ネストされたタグも考慮）
+                    if (remain.startsWith("<div>")) {
+                        // Find the matching </div> by counting depth
+                        let depth = 0;
+                        let i = 0;
+                        let foundMatch = false;
+
+                        while (i < remain.length) {
+                            if (remain.substring(i, i + 5) === "<div>") {
+                                depth++;
+                                i += 5;
+                            } else if (remain.substring(i, i + 6) === "</div>") {
+                                depth--;
+                                if (depth === 0) {
+                                    // Found the matching closing tag
+                                    const content = remain.substring(5, i); // Content between <div> and </div>
+                                    // Strip all HTML tags from content to get text only
+                                    const textContent = stripHtmlTags(content);
+                                    lines.push(textContent);
+                                    remain = remain.substring(i + 6);
+                                    foundMatch = true;
+                                    break;
+                                }
+                                i += 6;
+                            } else {
+                                i++;
+                            }
+                        }
+
+                        if (foundMatch) {
+                            continue;
+                        }
+                    }
+
+                    // <div> の開始を探す
+                    const divIndex = remain.indexOf("<div>");
+                    if (divIndex > 0) {
+                        // Strip HTML tags from the text before <div>
+                        const textContent = stripHtmlTags(remain.substring(0, divIndex));
+                        if (textContent) {
+                            lines.push(textContent);
+                        }
+                        remain = remain.substring(divIndex);
+                        continue;
+                    }
+
+                    // その他のタグまたは残りのテキスト
+                    const nextTagIndex = remain.indexOf("<");
+                    if (nextTagIndex === -1) {
+                        // No more tags, strip any remaining HTML and add as text
+                        const textContent = stripHtmlTags(remain);
+                        if (textContent.trim()) {
+                            lines.push(textContent);
+                        }
                         break;
+                    }
+
+                    if (nextTagIndex > 0) {
+                        // Text before next tag
+                        const textContent = stripHtmlTags(remain.substring(0, nextTagIndex));
+                        if (textContent) {
+                            lines.push(textContent);
+                        }
+                        remain = remain.substring(nextTagIndex);
+                    } else {
+                        // Skip the tag
+                        const tagEnd = remain.indexOf(">");
+                        if (tagEnd !== -1) {
+                            remain = remain.substring(tagEnd + 1);
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
@@ -1161,7 +1352,13 @@
                 const isContentEditable = textarea.contentEditable === 'true' ||
                     textarea.getAttribute('contenteditable') === 'true';
 
+                console.log('=== HTML Debug ===');
+                console.log('textarea.innerHTML:', textarea.innerHTML);
+
                 let lines = analyzeHtml(textarea.innerHTML.replace('\n    \n  ', ''));
+
+                console.log('lines from analyzeHtml:', JSON.stringify(lines, null, 2));
+                console.log('==================');
 
                 // === 修正部分：DOM構造に基づいたテキスト表現を構築 ===
                 let domBasedText = '';
@@ -1174,6 +1371,9 @@
                 }
 
                 // beginEndLenStringsをDOM構造ベースで構築
+                // br-based構造かdiv-based構造かを判定
+                const isBrBased = !textarea.innerHTML.startsWith("<div>") && !textarea.innerHTML.startsWith("<div ") && textarea.innerHTML.includes("<br>");
+
                 let offset = 0;
                 let beginEndLenStrings = [];
                 for (let i = 0; i < lines.length; i++) {
@@ -1181,7 +1381,9 @@
                     let actualLength;
 
                     if (line === "⹉") {
-                        actualLength = 1; // 改行として1文字
+                        // br-basedの場合、空行は長さ0（<br>が改行を表現している）
+                        // div-basedの場合は長さ1
+                        actualLength = isBrBased ? 0 : 1;
                     } else {
                         actualLength = line.length;
                     }
@@ -1193,6 +1395,11 @@
                         str: line,
                     });
                     offset += actualLength;
+
+                    // br-based構造の場合、各行（最後以外）の後に<br>セパレータがあるので+1
+                    if (isBrBased && i < lines.length - 1) {
+                        offset += 1; // <br>セパレータ分
+                    }
                 }
                 // ===================================================
 
@@ -1229,12 +1436,19 @@
                 const startOffset = getOffsetInContainer(textarea, range.startContainer, range.startOffset);
                 const endOffset = getOffsetInContainer(textarea, range.endContainer, range.endOffset);
 
-                // === デバッグ出力（削除可能）===
-                // console.log('=== insertMarkdown Debug ===');
-                // console.log('DOM-based text:', JSON.stringify(domBasedText));
-                // console.log('beginEndLenStrings:', JSON.stringify(beginEndLenStrings));
-                // console.log('Selection offsets:', startOffset, endOffset);
-                // console.log('Selected text:', JSON.stringify(domBasedText.substring(startOffset, endOffset)));
+                // === デバッグ出力 ===
+                console.log('=== insertMarkdown Debug ===');
+                console.log('DOM-based text:', JSON.stringify(domBasedText));
+                console.log('Selection offsets - start:', startOffset, 'end:', endOffset);
+                console.log('Selection containers - start:', range.startContainer, 'end:', range.endContainer);
+                console.log('Inserted text will be:', before + after);
+
+                // Save debug info to DOM for testing
+                window._debugInfo = {
+                    domBasedText: domBasedText,
+                    startOffset: startOffset,
+                    endOffset: endOffset
+                };
                 // =============================
 
                 const startPos = getLineAndCharIndex(textarea, startOffset);
@@ -1242,11 +1456,32 @@
 
                 const selectedTextContent = selection.toString();
 
+                console.log('=== Line Position Debug ===');
+                console.log('beginEndLenStrings:', JSON.stringify(beginEndLenStrings, null, 2));
+                console.log('startOffset:', startOffset, 'endOffset:', endOffset);
+                console.log('selectedTextContent:', JSON.stringify(selectedTextContent));
+                console.log('selectLineMode:', selectLineMode);
+
                 const targetTextPosition = selectLineNumberAndCharIndex(beginEndLenStrings, startOffset, endOffset);
+
+                console.log('targetTextPosition:', JSON.stringify(targetTextPosition, null, 2));
 
                 const newLines = !selectLineMode
                     ? replaceLineNumberAndCharIndex(beginEndLenStrings, targetTextPosition, before, after)
                     : replaceLine(beginEndLenStrings, selectedLinePos.line, before, after);
+
+                console.log('newLines:', JSON.stringify(newLines, null, 2));
+                console.log('newLines.length:', newLines.length);
+                console.log('newLines breakdown:');
+                for (let i = 0; i < newLines.length; i++) {
+                    console.log(`  Line ${i}: ${JSON.stringify(newLines[i])}`);
+                }
+                console.log('==========================');
+
+                // Save more debug info
+                window._debugInfo.beginEndLenStrings = beginEndLenStrings;
+                window._debugInfo.targetTextPosition = targetTextPosition;
+                window._debugInfo.newLines = newLines;
 
                 const newFullHTML = convertToInnerHtml(newLines);
 
@@ -1254,58 +1489,21 @@
                     textarea.innerHTML = newFullHTML;
                     textarea.focus();
 
-                    // 挿入されたテキストノードを直接探してカーソルを設定
-                    const insertedText = selectedTextContent.length > 0 ?
-                        (before + selectedTextContent + after) :
-                        (before + after);
-
                     // カーソル位置を計算（空文字選択時はbeforeの直後、テキスト選択時は挿入テキストの最後）
                     const cursorOffsetInInsertedText = selectedTextContent.length > 0 ?
-                        insertedText.length :
+                        (before.length + selectedTextContent.length + after.length) :
                         before.length;
 
-                    // 新しく挿入されたテキストの終端を探す
-                    const walker = document.createTreeWalker(
-                        textarea,
-                        NodeFilter.SHOW_TEXT,
-                        null,
-                        false
-                    );
+                    const targetPosition = startOffset + cursorOffsetInInsertedText;
 
-                    let foundNode = null;
-                    let foundOffset = 0;
-                    let node;
+                    console.log('=== Cursor Position Debug ===');
+                    console.log('startOffset:', startOffset);
+                    console.log('cursorOffsetInInsertedText:', cursorOffsetInInsertedText);
+                    console.log('targetPosition:', targetPosition);
+                    console.log('============================');
 
-                    while (node = walker.nextNode()) {
-                        if (node.textContent.includes(insertedText)) {
-                            // 挿入されたテキストを含むノードを発見
-                            const textIndex = node.textContent.indexOf(insertedText);
-                            if (textIndex !== -1) {
-                                foundNode = node;
-                                foundOffset = textIndex + cursorOffsetInInsertedText;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (foundNode) {
-                        // 見つかったテキストノード内にカーソルを設定
-                        const range = document.createRange();
-                        range.setStart(foundNode, Math.min(foundOffset, foundNode.textContent.length));
-                        range.collapse(true);
-
-                        const selection = window.getSelection();
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    } else {
-                        // フォールバック: 従来の方法
-                        const newDomText = buildDomBasedText(textarea);
-                        const targetPosition = Math.min(
-                            startOffset + cursorOffsetInInsertedText,
-                            newDomText.length
-                        );
-                        setContentEditableSelection(textarea, targetPosition, targetPosition);
-                    }
+                    // setContentEditableSelection関数を使用（innerTextベースで改行を正しく扱う）
+                    setContentEditableSelection(textarea, targetPosition, targetPosition);
                 }
 
                 // Fire input event
@@ -1315,6 +1513,10 @@
                 console.error('Error inserting markdown:', e);
             }
         };
+
+        // Expose setContentEditableSelection for testing
+        window.setContentEditableSelection = setContentEditableSelection;
+        window._debugGetOffsetInContainer = getOffsetInContainer;
 
         function buildDomBasedText(element) {
             const lines = analyzeHtml(element.innerHTML);
