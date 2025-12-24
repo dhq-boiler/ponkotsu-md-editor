@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+
+options = {
+  browser: "all",
+  category: "all",
+  headless: true
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/run_e2e_tests [options]"
+
+  opts.on("-b", "--browser BROWSER", "Browser to test (chrome, firefox, all)") do |b|
+    options[:browser] = b
+  end
+
+  opts.on("-c", "--category CATEGORY", "Test category (basic, formatting, preview, all)") do |c|
+    options[:category] = c
+  end
+
+  opts.on("--no-headless", "Run browser in visible mode") do
+    options[:headless] = false
+  end
+
+  opts.on("-h", "--help", "Show this help message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+# Build RSpec command
+rspec_args = ["bundle", "exec", "rspec", "spec/features/markdown_editor_e2e_spec.rb"]
+
+# Add browser filter
+case options[:browser]
+when "chrome"
+  rspec_args += ["-e", "Testing with Chrome"]
+when "firefox"
+  rspec_args += ["-e", "Testing with Firefox"]
+end
+
+# Add category filter
+case options[:category]
+when "basic"
+  rspec_args += ["-e", "Basic operations"]
+when "formatting"
+  rspec_args += ["-e", "Formatting buttons"]
+when "preview"
+  rspec_args += ["-e", "Preview functionality"]
+end
+
+# Add format options
+rspec_args += ["--format", "documentation", "--color"]
+
+puts "Running E2E tests with options:"
+puts "  Browser: #{options[:browser]}"
+puts "  Category: #{options[:category]}"
+puts "  Headless: #{options[:headless]}"
+puts "\nCommand: #{rspec_args.join(' ')}"
+puts "\n"
+
+# Execute tests
+exec(*rspec_args)
