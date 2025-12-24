@@ -7,6 +7,58 @@
     const analyzeHtmlCache = new Map();
     const MAX_CACHE_SIZE = 500;
 
+    // Undo/Redo stack management
+    class UndoRedoManager {
+        constructor(maxStackSize = 100) {
+            this.undoStack = [];
+            this.redoStack = [];
+            this.maxStackSize = maxStackSize;
+            this.isUndoRedoAction = false;
+        }
+
+        pushState(state) {
+            if (this.isUndoRedoAction) return;
+
+            this.undoStack.push(state);
+            if (this.undoStack.length > this.maxStackSize) {
+                this.undoStack.shift();
+            }
+            // Clear redo stack when new state is pushed
+            this.redoStack = [];
+        }
+
+        undo() {
+            if (this.undoStack.length === 0) return null;
+
+            const currentState = this.undoStack.pop();
+            this.redoStack.push(currentState);
+
+            return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null;
+        }
+
+        redo() {
+            if (this.redoStack.length === 0) return null;
+
+            const state = this.redoStack.pop();
+            this.undoStack.push(state);
+
+            return state;
+        }
+
+        canUndo() {
+            return this.undoStack.length > 1;
+        }
+
+        canRedo() {
+            return this.redoStack.length > 0;
+        }
+
+        clear() {
+            this.undoStack = [];
+            this.redoStack = [];
+        }
+    }
+
     // Debounce function for delayed execution
     function debounce(func, wait) {
         let timeout;
@@ -142,6 +194,80 @@
 
                 // 初期化時に同期
                 syncToHidden();
+
+                // inputイベントで同期
+                textarea.addEventListener('input', syncToHidden);
+
+                // Undo/Redo manager initialization
+                const undoRedoManager = new UndoRedoManager();
+
+                // Save editor state
+                function saveEditorState() {
+                    const state = {
+                        html: textarea.innerHTML,
+                        text: textarea.innerText,
+                        timestamp: Date.now()
+                    };
+                    undoRedoManager.pushState(state);
+                }
+
+                // Restore editor state
+                function restoreEditorState(state) {
+                    if (!state) return;
+
+                    undoRedoManager.isUndoRedoAction = true;
+                    textarea.innerHTML = state.html;
+                    syncToHidden();
+                    undoRedoManager.isUndoRedoAction = false;
+                }
+
+                // Perform undo
+                function performUndo() {
+                    const previousState = undoRedoManager.undo();
+                    restoreEditorState(previousState);
+                    return undoRedoManager.canUndo();
+                }
+
+                // Perform redo
+                function performRedo() {
+                    const nextState = undoRedoManager.redo();
+                    restoreEditorState(nextState);
+                    return undoRedoManager.canRedo();
+                }
+
+                // Save initial state
+                saveEditorState();
+
+                // Save state on input with debounce
+                const debouncedSaveState = debounce(saveEditorState, 500);
+                textarea.addEventListener('input', function(e) {
+                    if (!undoRedoManager.isUndoRedoAction) {
+                        debouncedSaveState();
+                    }
+                });
+
+                // Keyboard shortcuts for Undo/Redo
+                textarea.addEventListener('keydown', function(e) {
+                    // Ctrl+Z or Cmd+Z for Undo
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                        e.preventDefault();
+                        performUndo();
+                        return false;
+                    }
+
+                    // Ctrl+Y or Cmd+Shift+Z for Redo
+                    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                        e.preventDefault();
+                        performRedo();
+                        return false;
+                    }
+                });
+
+                // Make undo/redo functions globally accessible
+                window.editorUndo = performUndo;
+                window.editorRedo = performRedo;
+                window.canUndo = () => undoRedoManager.canUndo();
+                window.canRedo = () => undoRedoManager.canRedo();
 
                 // フォーム送信時の処理を非同期化
                 const form = textarea.closest('form');
