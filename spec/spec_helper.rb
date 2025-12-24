@@ -9,14 +9,17 @@ require "ponkotsu/md/editor"
 
 # Capybara configuration
 Capybara.configure do |config|
-  config.app_host = "file://#{File.expand_path("..", __dir__)}"
+  config.run_server = false
   config.default_max_wait_time = 10
   config.default_driver = :selenium_chrome_headless
   config.javascript_driver = :selenium_chrome_headless
 end
 
+# Set app host for static files
+Capybara.app_host = "file://#{File.expand_path("..", __dir__)}"
+
 # Chrome headless driver configuration
-Capybara.register_driver :selenium_chrome_headless do |_app|
+Capybara.register_driver :selenium_chrome_headless do |app|
   options = Selenium::WebDriver::Chrome::Options.new
   options.add_argument("--headless")
   options.add_argument("--no-sandbox")
@@ -24,7 +27,16 @@ Capybara.register_driver :selenium_chrome_headless do |_app|
   options.add_argument("--disable-gpu")
   options.add_argument("--window-size=1280,720")
 
-  Selenium::WebDriver.for(:chrome, options: options)
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: options)
+end
+
+# Firefox headless driver configuration
+Capybara.register_driver :selenium_firefox_headless do |app|
+  options = Selenium::WebDriver::Firefox::Options.new
+  options.add_argument("--headless")
+  options.add_argument("--window-size=1280,720")
+
+  Capybara::Selenium::Driver.new(app, browser: :firefox, options: options)
 end
 
 RSpec.configure do |config|
@@ -40,4 +52,7 @@ RSpec.configure do |config|
 
   # Include Capybara DSL in feature specs
   config.include Capybara::DSL, type: :feature
+
+  # Load support files
+  Dir[File.join(__dir__, "support", "**", "*.rb")].each { |f| require f }
 end
