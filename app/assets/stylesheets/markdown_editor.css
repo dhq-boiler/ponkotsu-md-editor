@@ -1,53 +1,15 @@
-:root {
-    --accent-color: #007bff;
-    --accent-color-hover: #0056b3;
-    --accent-pink: #e83e8c;
-    --background: #fff;
-    --background-dark: #222;
-    --background-alt: #f8f9fa;
-    --background-code: #f5f5f5;
-    --preview-bg: #f8f9fa;
-    --border: #ced4da;
-    --border-light: #ced4da;
-    --border-info: #b6e2f7;
-    --border-table: #dee2e6;
-    --text-primary: #212529;
-    --text-invert: #fff;
-    --text-secondary: #495057;
-    --text-muted: #6c757d;
-    --text-placeholder: #999;
-    --text-info: #222;
-    --text-blockquote: #495057;
-    --info-bg: #e9f7fd;
-    --table-row-alt: #f2f2f2;
-    --code-bg: #e9ecef;
-    --code-text: #d63384;
-}
-[data-theme="dark"] {
-    --accent-color: #66b3ff;
-    --accent-color-hover: #3399ff;
-    --accent-pink: #ff7eb9;
-    --background: #181a1b;
-    --background-dark: #222;
-    --background-alt: #2a2a2a;
-    --background-code: #2d3748;
-    --preview-bg: #363636;
-    --border: #444;
-    --border-light: #444;
-    --border-info: #3a4a5a;
-    --border-table: #666;
-    --text-primary: #f1f3f4;
-    --text-invert: #181a1b;
-    --text-secondary: #adb5bd;
-    --text-muted: #6c757d;
-    --text-placeholder: #888;
-    --text-info: #f1f3f4;
-    --text-blockquote: #adb5bd;
-    --info-bg: #223344;
-    --table-row-alt: #23272b;
-    --code-bg: #495057;
-    --code-text: #ffb3d1;
-}
+/*
+ * CSS variables should be defined by the host application.
+ * This allows the editor to integrate seamlessly with any theme.
+ *
+ * Required CSS variables:
+ * --accent-color, --accent-color-hover, --accent-pink
+ * --background, --background-dark, --background-alt, --background-code, --preview-bg
+ * --border, --border-light, --border-info, --border-table
+ * --text-primary, --text-invert, --text-secondary, --text-muted, --text-placeholder
+ * --text-info, --text-blockquote
+ * --info-bg, --table-row-alt, --code-bg, --code-text
+ */
 
 .editor-container {
     position: relative;
